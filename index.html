@@ -3,12 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>AI画像検査＆マルチ枠個別照合システム (高安定・効率化完全版)</title>
+  <title>パン屋AI＆QR照合 マルチ枠検査システム</title>
   
+  <!-- TensorFlow.js & MobileNet (パン屋AI特徴抽出用) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier@1.2.4/dist/knn-classifier.min.js"></script>
+  <!-- QR / バーコード読取 & OCRエンジン -->
   <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 
   <style>
     :root {
@@ -16,14 +18,14 @@
       --success: #2e7d32;
       --danger: #c62828;
       --warning: #ef6c00;
-      --ai-color: #6a1b9a;
+      --bakery-color: #6a1b9a;
+      --qr-color: #00838f;
       --bg: #f0f4f8;
       --panel: #ffffff;
-      --text-main: #1e293b;
-      --border-color: #94a3b8;
+      --text-main: #0f172a;
+      --border-color: #64748b;
     }
 
-    /* OSのダークモード等による文字・背景の同化を完全遮断 */
     * { 
       box-sizing: border-box; 
       margin: 0; 
@@ -35,18 +37,18 @@
     body { 
       background-color: var(--bg); 
       color: var(--text-main);
-      height: 100vh; 
+      min-height: 100vh; 
       display: flex; 
       flex-direction: column; 
-      overflow: hidden; 
       position: relative; 
     }
 
+    /* 外枠フラッシュ演出 */
     #borderFlash {
       position: fixed;
       inset: 0;
       pointer-events: none;
-      z-index: 900;
+      z-index: 950;
       opacity: 0;
       transition: opacity 0.15s ease-out;
     }
@@ -55,41 +57,188 @@
 
     header {
       background: var(--primary);
-      padding: 6px 12px;
+      padding: 8px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.15);
       flex-shrink: 0;
     }
-    header h3 { color: #ffffff; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    header h3 { color: #ffffff !important; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .top-bar {
       background: #e2e8f0;
-      padding: 5px 12px;
+      padding: 6px 14px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 6px;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       font-weight: bold;
-      border-bottom: 1px solid var(--border-color);
+      border-bottom: 1.5px solid var(--border-color);
       flex-shrink: 0;
     }
 
     .counter-badge {
       background: #ffffff;
-      border: 1px solid var(--border-color);
-      padding: 2px 8px;
+      border: 1.5px solid var(--border-color);
+      padding: 3px 10px;
       border-radius: 4px;
-      font-size: 0.78rem;
+      font-size: 0.8rem;
       display: flex;
-      gap: 8px;
+      gap: 10px;
       align-items: center;
     }
 
-    .main-wrap { display: flex; flex: 1; padding: 8px; gap: 8px; overflow: hidden; }
+    /* 共通ボタン・入力欄スタイル（白背景・黒枠・文字はみ出し防止） */
+    .btn {
+      padding: 7px 12px;
+      border: 1.5px solid #1e293b;
+      border-radius: 5px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.82rem;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      white-space: nowrap;
+      background: #ffffff;
+      color: #0f172a !important;
+      transition: filter 0.15s;
+    }
+    .btn:hover { filter: brightness(0.92); }
+    .btn:active { transform: translateY(1px); }
+    .btn-primary { background: var(--primary); color: #ffffff !important; border-color: #0d47a1; }
+    .btn-success { background: var(--success); color: #ffffff !important; border-color: #1b5e20; }
+    .btn-danger { background: var(--danger); color: #ffffff !important; border-color: #b71c1c; }
+    .btn-warning { background: var(--warning); color: #ffffff !important; border-color: #e65100; }
+    .btn-bakery { background: var(--bakery-color); color: #ffffff !important; border-color: #4a148c; }
+    .btn-qr { background: var(--qr-color); color: #ffffff !important; border-color: #004d40; }
+    .btn-dark { background: #334155; color: #ffffff !important; border-color: #0f172a; }
+    .btn-outline { background: #ffffff; border: 1.5px solid #334155; color: #0f172a !important; }
+
+    .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
+
+    input[type="text"], input[type="number"], select {
+      padding: 6px 10px;
+      background-color: #ffffff !important;
+      color: #0f172a !important;
+      border: 1.5px solid #334155;
+      border-radius: 5px;
+      font-size: 0.85rem;
+      font-weight: bold;
+    }
+
+    .sec-title {
+      font-size: 0.88rem;
+      font-weight: bold;
+      color: #0f172a;
+      border-left: 5px solid var(--primary);
+      padding-left: 8px;
+      margin-bottom: 6px;
+    }
+
+    /* =================================================
+       画面1: 品番読み取り・選択画面 (#screenSelector)
+       ================================================= */
+    #screenSelector {
+      flex: 1;
+      padding: 14px;
+      max-width: 780px;
+      width: 100%;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .selector-card {
+      background: #ffffff;
+      border: 2px solid #94a3b8;
+      border-radius: 8px;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+
+    .scan-camera-box {
+      position: relative;
+      width: 100%;
+      max-width: 460px;
+      margin: 0 auto;
+      aspect-ratio: 4 / 3;
+      background: #000;
+      border-radius: 8px;
+      border: 2px solid #1e293b;
+      overflow: hidden;
+      display: none;
+    }
+    #selectorQrReader { width: 100% !important; height: 100% !important; border: none !important; }
+    #selectorQrReader video { object-fit: cover !important; }
+    #selectorOcrVideo { width: 100%; height: 100%; object-fit: cover; display: none; }
+
+    /* OCR用スリムターゲット枠 */
+    .ocr-scan-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 78%;
+      height: 38px;
+      border: 2.5px solid #4ade80;
+      border-radius: 4px;
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+      pointer-events: none;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .ocr-scan-box .guide-text {
+      position: absolute;
+      top: -24px;
+      color: #4ade80 !important;
+      font-size: 0.75rem;
+      font-weight: bold;
+      background: rgba(0,0,0,0.85);
+      padding: 2px 8px;
+      border-radius: 3px;
+      white-space: nowrap;
+    }
+
+    .ocr-preview-bar {
+      display: none;
+      align-items: center;
+      gap: 8px;
+      background: #e2e8f0;
+      border: 1px solid #64748b;
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: bold;
+    }
+    #ocrCropCanvas {
+      width: 110px;
+      height: 24px;
+      border: 1px solid #1e293b;
+      background: #fff;
+    }
+
+    /* =================================================
+       画面2: マルチ枠検査画面 (#screenInspector)
+       ================================================= */
+    #screenInspector {
+      display: none;
+      flex: 1;
+      padding: 8px;
+      gap: 8px;
+      overflow: hidden;
+      height: calc(100vh - 82px);
+    }
 
     .viewport {
       flex: 3;
@@ -116,25 +265,25 @@
       position: absolute;
       top: 8px;
       left: 8px;
-      background: rgba(15, 23, 42, 0.88);
-      color: #fde047;
-      border: 1px solid #475569;
+      background: rgba(15, 23, 42, 0.9);
+      color: #fde047 !important;
+      border: 1px solid #94a3b8;
       padding: 4px 10px;
       border-radius: 4px;
       font-size: 0.8rem;
       font-weight: bold;
       z-index: 10;
-      max-width: 90%;
+      max-width: 92%;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
     .panel {
-      flex: 1.6;
+      flex: 1.65;
       background: var(--panel);
       border-radius: 6px;
-      border: 1px solid var(--border-color);
+      border: 1.5px solid var(--border-color);
       padding: 10px;
       display: flex;
       flex-direction: column;
@@ -143,63 +292,29 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.06);
     }
 
-    .sec-title {
-      font-size: 0.82rem;
-      font-weight: bold;
-      color: #0f172a;
-      border-left: 4px solid var(--primary);
-      padding-left: 6px;
-      margin-bottom: 4px;
-    }
-
-    /* ボタン類の視認性・枠線強化（文字のはみ出し・同化防止） */
-    .btn {
+    .active-part-banner {
+      background: #fef9c3;
+      border: 2px solid #eab308;
+      border-radius: 6px;
       padding: 6px 10px;
-      border: 1px solid transparent;
-      border-radius: 4px;
-      font-weight: bold;
-      cursor: pointer;
-      font-size: 0.8rem;
-      display: inline-flex;
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      gap: 4px;
-      white-space: nowrap;
-      transition: filter 0.15s;
-    }
-    .btn:hover { filter: brightness(0.93); }
-    .btn:active { transform: translateY(1px); }
-    .btn-primary { background: var(--primary); color: #ffffff !important; border-color: #0d47a1; }
-    .btn-success { background: var(--success); color: #ffffff !important; border-color: #1b5e20; }
-    .btn-danger { background: var(--danger); color: #ffffff !important; border-color: #b71c1c; }
-    .btn-warning { background: var(--warning); color: #ffffff !important; border-color: #e65100; }
-    .btn-ai { background: var(--ai-color); color: #ffffff !important; border-color: #4a148c; }
-    .btn-dark { background: #334155; color: #ffffff !important; border-color: #0f172a; }
-    .btn-outline { background: #ffffff; border: 1.5px solid #64748b; color: #1e293b !important; }
-
-    .btn-group { display: flex; gap: 4px; flex-wrap: wrap; }
-
-    input[type="text"], input[type="number"], select {
-      padding: 5px 8px;
-      background-color: #ffffff !important;
-      color: #0f172a !important;
-      border: 1.5px solid #64748b;
-      border-radius: 4px;
-      font-size: 0.82rem;
-      font-weight: bold;
+      gap: 6px;
+      flex-wrap: wrap;
     }
 
     .mode-card {
       background: #f8fafc;
-      border: 1.5px solid #cbd5e1;
+      border: 1.5px solid #64748b;
       border-radius: 6px;
       padding: 8px;
       display: flex;
       flex-direction: column;
       gap: 6px;
     }
-    .mode-card.ai-theme { background: #faf5ff; border-color: #d8b4fe; }
-    .mode-card.color-theme { background: #f0fdf4; border-color: #86efac; }
+    .mode-card.bakery-theme { background: #faf5ff; border-color: #9333ea; }
+    .mode-card.qr-theme { background: #ecfeff; border-color: #0891b2; }
 
     .roi-list-box {
       max-height: 135px;
@@ -207,7 +322,7 @@
       display: flex;
       flex-direction: column;
       gap: 4px;
-      border: 1.5px solid #94a3b8;
+      border: 1.5px solid #64748b;
       padding: 4px;
       border-radius: 4px;
       background: #f1f5f9;
@@ -221,7 +336,7 @@
       padding: 5px 8px;
       border-radius: 4px;
       font-size: 0.8rem;
-      border: 1px solid #cbd5e1;
+      border: 1px solid #94a3b8;
       gap: 6px;
     }
     .roi-item.active {
@@ -231,9 +346,9 @@
 
     .roi-type-select {
       width: auto !important;
-      min-width: 96px;
+      min-width: 115px;
       padding: 4px 6px !important;
-      font-size: 0.8rem !important;
+      font-size: 0.78rem !important;
       background-color: #ffffff !important;
       color: #0f172a !important;
       border: 1.5px solid var(--primary) !important;
@@ -243,7 +358,7 @@
 
     .adjust-panel {
       background: #f1f5f9;
-      border: 1px solid #94a3b8;
+      border: 1px solid #64748b;
       padding: 6px;
       border-radius: 4px;
       display: flex;
@@ -273,14 +388,13 @@
     .lock-overlay h1, .lock-overlay div { color: #ffffff !important; }
 
     @media (max-width: 768px) {
-      body { height: auto; min-height: 100vh; overflow-y: auto; }
-      .main-wrap { flex-direction: column; height: auto; padding: 4px; gap: 6px; overflow: visible; }
+      #screenInspector {
+        flex-direction: column;
+        height: auto;
+        overflow: visible;
+      }
       .viewport { flex: none; width: 100%; aspect-ratio: 4 / 3; max-height: 42vh; }
-      .panel { flex: none; width: 100%; overflow-y: visible; padding: 8px; gap: 8px; }
-      #secAction { order: 1; }
-      #secModeSetting { order: 2; }
-      #secRoi { order: 3; }
-      #secProfile { order: 4; }
+      .panel { flex: none; width: 100%; overflow-y: visible; }
       .btn { padding: 9px 10px; font-size: 0.85rem; }
       .roi-type-select, input[type="text"], input[type="number"], select {
         font-size: 16px !important;
@@ -291,9 +405,11 @@
 <body>
 
   <div id="borderFlash"></div>
+  <!-- 枠内QRデコード用の非表示リーダー -->
+  <div id="hiddenRoiQrReader" style="display:none;"></div>
 
   <header>
-    <h3>AI画像検査＆マルチ枠照合システム</h3>
+    <h3>🥐 パン屋AI＆QR照合 マルチ検査システム</h3>
     <div style="display:flex; gap:4px;">
       <button id="btnVoice" class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="toggleVoice()">🔊 音声: ON</button>
       <button id="btnTorch" class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="toggleTorch()">🔦 ライト</button>
@@ -310,72 +426,147 @@
     <div class="counter-badge">
       <span style="color:#2e7d32;">OK: <b id="statOk" style="color:#2e7d32;">0</b></span>
       <span style="color:#c62828;">NG: <b id="statNg" style="color:#c62828;">0</b></span>
-      <button class="btn btn-outline" style="padding:1px 5px; font-size:0.7rem;" onclick="resetStats()">リセット</button>
+      <button class="btn btn-outline" style="padding:1px 6px; font-size:0.72rem;" onclick="resetStats()">リセット</button>
     </div>
   </div>
 
-  <div class="main-wrap">
+  <!-- =========================================================
+       【画面1】 起動時：品番読み取り・選択画面 (#screenSelector)
+       ========================================================= -->
+  <div id="screenSelector">
+    <div class="selector-card">
+      <div class="sec-title">① QR・バーコード / 文字(OCR) で品番を読み取る</div>
+      <div style="font-size:0.82rem; color:#334155;">
+        指示書や現品票のコード、または印字された品番をカメラで読み取ると、自動的に検査画面へ進みます。
+      </div>
+
+      <div class="btn-group">
+        <button class="btn btn-qr" style="flex:1; padding:12px;" onclick="startSelectorBarcodeScan()">📷 QR / バーコード読取</button>
+        <button class="btn btn-bakery" style="flex:1; padding:12px;" onclick="startSelectorOcrScan()">🔤 文字(OCR)で品番読取</button>
+      </div>
+
+      <!-- カメラプレビュー枠（スキャン起動時に表示） -->
+      <div class="scan-camera-box" id="selectorCamBox">
+        <div id="selectorQrReader"></div>
+        <video id="selectorOcrVideo" playsinline autoplay muted></video>
+        <div class="ocr-scan-box" id="selectorOcrBox">
+          <span class="guide-text">緑枠内に品番文字を合わせてください</span>
+        </div>
+        <button class="btn btn-danger" style="position:absolute; top:8px; right:8px; z-index:30; padding:4px 10px;" onclick="stopSelectorCamera()">✖ カメラ停止</button>
+      </div>
+
+      <!-- OCR認識結果確認＆手動確定バー -->
+      <div class="ocr-preview-bar" id="selectorOcrBar">
+        <span>2値化:</span>
+        <canvas id="ocrCropCanvas"></canvas>
+        <span>読取文字: <b id="lblOcrDetected" style="color:var(--primary); font-size:0.95rem;">---</b></span>
+        <button class="btn btn-success" style="margin-left:auto; padding:4px 10px;" onclick="confirmOcrDetectedCode()">この文字で決定 ➔</button>
+      </div>
+
+      <!-- ハンディスキャナ / 手入力欄 -->
+      <div style="display:flex; gap:6px; margin-top:4px;">
+        <input type="text" id="txtScanPartInput" placeholder="ハンディスキャナ読取 または 品番手入力" style="flex:1;" autocomplete="off">
+        <button class="btn btn-primary" onclick="handleManualPartCode()">品番決定 ➔</button>
+      </div>
+    </div>
+
+    <!-- 各種コードが無い場合：プルダウンから登録品番を呼び出す -->
+    <div class="selector-card">
+      <div class="sec-title">② コードが無い場合：登録済み品番リストから呼び出す</div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
+        <select id="selStartProfile" style="flex:1; min-width:180px;"></select>
+        <button class="btn btn-success" style="padding:8px 16px; font-size:0.9rem;" onclick="startWithSelectedDropdown()">🚀 選択した品番で検査開始 ➔</button>
+        <button class="btn btn-danger" onclick="deleteProfileFromStart()">削除</button>
+      </div>
+    </div>
+
+    <!-- JSON設定ファイルの入出力・AI初期化状態 -->
+    <div class="selector-card">
+      <div class="sec-title">③ 品番データ共有 (JSON入出力) ＆ AIエンジン状態</div>
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+        <span id="lblStartAiStatus" style="font-size:0.85rem; font-weight:bold; color:var(--primary);">⏳ パン屋AIモデル読込中...</span>
+        <div class="btn-group">
+          <button class="btn btn-outline" onclick="exportProfilesJson()">📁 全品番をJSON書出</button>
+          <input type="file" id="fileJsonInput" accept=".json" style="display:none;" onchange="importProfilesJson(event)">
+          <button class="btn btn-outline" onclick="document.getElementById('fileJsonInput').click()">📥 JSON読込</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- =========================================================
+       【画面2】 マルチ枠検査画面 (#screenInspector)
+       ========================================================= -->
+  <div id="screenInspector">
     <!-- カメラ映像エリア -->
     <div class="viewport">
-      <div id="aiLiveBadge">AI初期化待機中...</div>
+      <div id="aiLiveBadge">カメラ準備中...</div>
       <video id="videoSource" playsinline autoplay muted></video>
       <canvas id="mainCanvas"></canvas>
-      <div id="qrReaderHidden" style="display:none; position:absolute; inset:0; z-index:50; background:#000;"></div>
     </div>
 
     <!-- 操作パネルエリア -->
     <div class="panel">
-      <!-- 1. 検査実行・カメラ制御 -->
-      <div id="secAction">
-        <div class="btn-group">
-          <button id="btnCam" class="btn btn-primary" style="flex:1;" onclick="toggleCam()">📷 カメラ起動</button>
-          <button class="btn btn-success" style="flex:1.6; font-size:1rem;" onclick="executeInspection()">🔍 全枠一括検査 (Space)</button>
+      <!-- 品番表示 ＆ 品番読取画面へ戻るボタン -->
+      <div class="active-part-banner">
+        <div>
+          <span style="font-size:0.75rem; color:#475569; font-weight:bold;">現在の検査品番:</span>
+          <div id="lblCurrentPartName" style="font-size:1.05rem; font-weight:bold; color:#0f172a;">未選択</div>
+        </div>
+        <div style="display:flex; gap:4px;">
+          <button class="btn btn-primary" style="padding:5px 10px;" onclick="saveCurrentProfile()">💾 設定保存</button>
+          <button class="btn btn-outline" style="padding:5px 10px;" onclick="returnToSelectorScreen()">🔙 品番読取へ戻る</button>
         </div>
       </div>
 
-      <!-- 2. 選択枠の個別設定（AI外観 または 色面積 に自動切替） -->
+      <!-- 1. 検査実行・カメラ制御 -->
+      <div id="secAction">
+        <div class="btn-group">
+          <button id="btnCam" class="btn btn-primary" style="flex:1;" onclick="toggleInspectorCam()">📷 カメラ停止</button>
+          <button class="btn btn-success" style="flex:1.7; font-size:1rem;" onclick="executeInspection()">🔍 全枠一括検査 (Space)</button>
+        </div>
+      </div>
+
+      <!-- 2. 選択枠の個別設定（パン屋AI または QR/バーコード照合 に自動切替） -->
       <div id="secModeSetting">
-        <!-- 2-A. AI学習パネル -->
-        <div id="cardAI" class="mode-card ai-theme">
+        <!-- 2-A. パン屋AI照合パネル -->
+        <div id="cardBakery" class="mode-card bakery-theme">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
-            <b style="font-size:0.82rem; color:var(--ai-color);">🤖 選択枠のAI学習</b>
-            <span id="lblActiveRoiAI" style="font-size:0.78rem; font-weight:bold; color:var(--primary);">枠 1 選択中</span>
+            <b style="font-size:0.84rem; color:var(--bakery-color);">🥐 パン屋AI照合 (良品マスター特徴記憶)</b>
+            <span id="lblActiveRoiBakery" style="font-size:0.78rem; font-weight:bold; color:var(--primary);">枠 1</span>
+          </div>
+          <div style="font-size:0.74rem; color:#334155;">
+            枠内に良品ワークを収めて登録してください（少しずつ向きを変えて複数枚登録すると個体差に強くなります）。
           </div>
           <div style="display:flex; gap:6px;">
-            <button class="btn btn-success" style="flex:1; padding:10px 6px;" onmousedown="startLearning('OK')" onmouseup="stopLearning()" onmouseleave="stopLearning()" ontouchstart="startLearning('OK', event)" ontouchend="stopLearning()">
-              ＋ OK学習 (<span id="countOk" style="color:#fff;">0</span>)
+            <button class="btn btn-bakery" style="flex:1; padding:10px 6px;" onmousedown="startBakeryRegister()" onmouseup="stopBakeryRegister()" onmouseleave="stopBakeryRegister()" ontouchstart="startBakeryRegister(event)" ontouchend="stopBakeryRegister()">
+              📸 良品マスター追加 (<span id="countBakery" style="color:#fff;">0</span>枚)
             </button>
-            <button class="btn btn-danger" style="flex:1; padding:10px 6px;" onmousedown="startLearning('NG')" onmouseup="stopLearning()" onmouseleave="stopLearning()" ontouchstart="startLearning('NG', event)" ontouchend="stopLearning()">
-              ＋ NG学習 (<span id="countNg" style="color:#fff;">0</span>)
-            </button>
+            <button class="btn btn-outline" style="padding:10px 8px;" onclick="clearBakerySamples()">初期化</button>
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem;">
-            <span>AI合格確信度 閾値(%):</span>
-            <input type="number" id="numAiThreshold" value="70" min="1" max="100" style="width:65px; text-align:center;" onchange="updateActiveRoiThreshold(this.value)">
+            <span>パン屋AI 類似度合格ライン(%):</span>
+            <input type="number" id="numBakeryThreshold" value="80" min="1" max="100" style="width:68px; text-align:center;" onchange="updateActiveRoiThreshold(this.value)">
           </div>
           <div style="display:flex; gap:4px;">
-            <button id="btnLiveAiToggle" class="btn btn-outline" style="flex:1; font-size:0.74rem;" onclick="toggleLiveAi()">⚡ 常時推論: ON</button>
-            <button class="btn btn-outline" style="flex:1; font-size:0.74rem;" onclick="clearAiClasses()">学習初期化</button>
+            <button id="btnLiveAiToggle" class="btn btn-outline" style="flex:1; font-size:0.74rem;" onclick="toggleLiveAi()">⚡ ライブ類似度表示: ON</button>
           </div>
         </div>
 
-        <!-- 2-B. 色面積設定パネル（枠が「色面積」の時に表示） -->
-        <div id="cardColor" class="mode-card color-theme" style="display:none;">
+        <!-- 2-B. QR / バーコード照合パネル -->
+        <div id="cardBarcode" class="mode-card qr-theme" style="display:none;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <b style="font-size:0.82rem; color:var(--success);">🟩 選択枠の色面積設定</b>
-            <span id="lblActiveRoiColor" style="font-size:0.78rem; font-weight:bold; color:var(--primary);">枠 1 選択中</span>
+            <b style="font-size:0.84rem; color:var(--qr-color);">📷 枠内 QR / バーコード照合設定</b>
+            <span id="lblActiveRoiBarcode" style="font-size:0.78rem; font-weight:bold; color:var(--primary);">枠 1</span>
           </div>
-          <div style="display:flex; gap:6px; align-items:center;">
-            <button id="btnEyedropper" class="btn btn-outline" style="flex:1;" onclick="toggleEyedropper()">🎯 画面から色をスポイト</button>
-            <input type="color" id="colPicker" value="#ff0000" style="width:42px; height:32px; cursor:pointer;" onchange="updateActiveRoiColor(this.value)">
+          <div style="font-size:0.74rem; color:#334155;">
+            枠内のQR・バーコードを読み取り、下の「正解コード」と一致するか照合します（空欄時は現在の品番と一致するか判定）。
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem;">
-            <span>合格面積 閾値(%以上):</span>
-            <input type="number" id="numColorRatio" value="15" min="1" max="100" style="width:65px; text-align:center;" onchange="updateActiveRoiColorRatio(this.value)">
+          <div style="display:flex; gap:4px; align-items:center;">
+            <input type="text" id="txtExpectedBarcode" placeholder="正解コード (空欄=現在品番と照合)" style="flex:1;" onchange="updateActiveRoiExpectedCode(this.value)">
           </div>
-          <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem;">
-            <span>色の許容幅 (10〜80):</span>
-            <input type="number" id="numColorTol" value="40" min="5" max="100" style="width:65px; text-align:center;" onchange="updateActiveRoiColorTol(this.value)">
+          <div style="display:flex; gap:4px;">
+            <button class="btn btn-qr" style="flex:1; padding:8px;" onclick="captureBarcodeToExpected()">🎯 今の枠内コードを読取って正解に登録</button>
           </div>
         </div>
       </div>
@@ -383,7 +574,7 @@
       <!-- 3. マルチ検査枠管理 ＆ サイズ・位置調整 -->
       <div id="secRoi">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <span class="sec-title" style="margin-bottom:0;">検査枠リスト (ドラッグで枠作成)</span>
+          <span class="sec-title" style="margin-bottom:0;">検査枠リスト (画面ドラッグで追加)</span>
           <button id="btnToggleLock" class="btn btn-warning" style="padding:3px 8px; font-size:0.75rem;" onclick="toggleRoiLock()">🔓 枠編集: ON</button>
         </div>
         
@@ -412,51 +603,47 @@
           </div>
         </div>
       </div>
-
-      <!-- 4. プロファイル管理 -->
-      <div id="secProfile">
-        <div class="sec-title">プロファイル管理・JSON共有</div>
-        <div class="btn-group" style="margin-bottom:4px;">
-          <select id="selProfile" style="flex:1;" onchange="loadProfile()"></select>
-          <button class="btn btn-danger" onclick="deleteProfile()">削除</button>
-        </div>
-        <div class="btn-group" style="margin-bottom:4px;">
-          <input type="text" id="txtProfileName" placeholder="保存名 (例: 品番A)" style="flex:1;">
-          <button class="btn btn-primary" onclick="saveProfile()">保存</button>
-          <button class="btn btn-dark" onclick="scanQrProfile()">QR読込</button>
-        </div>
-        <div class="btn-group">
-          <button class="btn btn-outline" style="flex:1;" onclick="exportProfilesJson()">📁 JSON書出</button>
-          <input type="file" id="fileJsonInput" accept=".json" style="display:none;" onchange="importProfilesJson(event)">
-          <button class="btn btn-outline" style="flex:1;" onclick="document.getElementById('fileJsonInput').click()">📥 JSON読込</button>
-        </div>
-      </div>
     </div>
   </div>
 
   <!-- NGロック画面 -->
   <div class="lock-overlay" id="ngLockOverlay">
-    <h1 style="font-size:2.6rem;">⚠️ 検査 NG (不合格)</h1>
-    <div id="ngReasonDetails" style="font-size:1.05rem; max-height:42vh; overflow-y:auto; text-align:left; background:rgba(0,0,0,0.35); padding:12px; border-radius:6px; width:100%; max-width:500px; border:1px solid #fca5a5;"></div>
-    <button class="btn btn-outline" style="padding:12px 28px; font-size:1.05rem; background:#ffffff; color:#c62828 !important; border:2px solid #ffffff;" onclick="unlockNgScreen()">確認して解除 (Enter / Space)</button>
+    <h1 style="font-size:2.5rem;">⚠️ 検査 NG (不合格)</h1>
+    <div id="ngReasonDetails" style="font-size:1.05rem; max-height:42vh; overflow-y:auto; text-align:left; background:rgba(0,0,0,0.4); padding:14px; border-radius:6px; width:100%; max-width:520px; border:1.5px solid #fca5a5;"></div>
+    <button class="btn btn-outline" style="padding:12px 28px; font-size:1.05rem; background:#ffffff; color:#c62828 !important; border:2px solid #000000;" onclick="unlockNgScreen()">確認して解除 (Enter / Space)</button>
   </div>
 
   <script>
+    const STORAGE_KEY = 'bakery_qr_profiles_v1';
+    const LOG_KEY = 'bakery_qr_logs_v1';
+
+    let currentScreen = 'SELECTOR'; // 'SELECTOR' or 'INSPECTOR'
+    let currentPartName = '';
+
+    // 検査カメラ・ハードウェア状態
     let isCamRunning = false;
     let camStream = null;
     let torchEnabled = false;
     let voiceEnabled = true;
     let liveAiEnabled = true;
 
+    // AI・OCR・QRインスタンス
     let mobilenetModel = null;
-    let learnInterval = null;
+    let bakeryInterval = null;
     let isLiveInferring = false;
     let lastLiveInferTime = 0;
 
+    let selectorQrScanner = null;
+    let selectorOcrStream = null;
+    let selectorOcrTimer = null;
+    let isOcrBusy = false;
+    let ocrWorker = null;
+    let roiQrScanner = null;
+
+    // マルチROI管理
     let multiRois = [];
     let activeRoiIndex = 0;
     let isRoiLocked = false;
-    let isEyedropper = false;
 
     let statOkCount = 0;
     let statNgCount = 0;
@@ -474,11 +661,9 @@
     const cropCanvas = document.createElement('canvas');
     const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
 
-    // --- 1. AIエンジンの安全な初期化 ---
+    // --- 1. AIモデルの初期化 ---
     async function initAI() {
-      const badge = document.getElementById('aiLiveBadge');
-      badge.textContent = 'AIモデル読込中...';
-
+      const startStatus = document.getElementById('lblStartAiStatus');
       let retry = 0;
       while (retry < 30) {
         if (typeof tf !== 'undefined' && typeof mobilenet !== 'undefined') break;
@@ -489,54 +674,353 @@
       try {
         await tf.ready();
         mobilenetModel = await mobilenet.load({ version: 2, alpha: 1.0 });
-        badge.textContent = 'AI準備完了 (カメラを起動してください)';
-        badge.style.color = '#4ade80';
-        
-        if (multiRois.length === 0) {
-          addRoi(60, 60, 220, 220, 'AI');
-        }
+        startStatus.textContent = '✅ パン屋AIエンジン準備完了';
+        startStatus.style.color = '#15803d';
       } catch (e) {
-        badge.textContent = 'AI読込失敗(色面積は使用可): ' + e.message;
-        badge.style.color = '#f87171';
+        startStatus.textContent = '⚠️ AI読込失敗 (QR照合のみ使用可)';
+        startStatus.style.color = '#c62828';
+      }
+
+      try {
+        roiQrScanner = new Html5Qrcode("hiddenRoiQrReader");
+      } catch(e){}
+    }
+
+    // --- 文字列正規化（全角英数字→半角・空白除去） ---
+    function normalizeCodeString(str) {
+      if (!str) return '';
+      return str.normalize('NFKC').trim();
+    }
+
+    // =========================================================
+    // 【画面1】 品番読み取り・選択画面の制御
+    // =========================================================
+    function updateSelectorDropdown() {
+      const sel = document.getElementById('selStartProfile');
+      const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      sel.innerHTML = '<option value="">-- 登録済み品番を選択 --</option>';
+      Object.keys(p).forEach(k => {
+        const opt = document.createElement('option');
+        opt.value = k;
+        opt.textContent = `${k} (枠数: ${(p[k].roisData || []).length})`;
+        sel.appendChild(opt);
+      });
+    }
+
+    // 1-A. QR / バーコードで品番読取
+    async function startSelectorBarcodeScan() {
+      await stopSelectorCamera();
+      const box = document.getElementById('selectorCamBox');
+      const qrDiv = document.getElementById('selectorQrReader');
+      box.style.display = 'block';
+      qrDiv.style.display = 'block';
+
+      selectorQrScanner = new Html5Qrcode("selectorQrReader");
+      selectorQrScanner.start(
+        { facingMode: "environment" },
+        { fps: 15, qrbox: { width: 240, height: 150 } },
+        (decodedText) => {
+          const code = normalizeCodeString(decodedText);
+          if (code) {
+            beep(1300, 0.12);
+            transitionToInspector(code);
+          }
+        },
+        () => {}
+      ).catch(err => {
+        alert('カメラ起動に失敗しました: ' + err);
+        stopSelectorCamera();
+      });
+    }
+
+    // 1-B. 文字(OCR)で品番読取
+    async function startSelectorOcrScan() {
+      await stopSelectorCamera();
+      const box = document.getElementById('selectorCamBox');
+      const ocrVid = document.getElementById('selectorOcrVideo');
+      const ocrBox = document.getElementById('selectorOcrBox');
+      const ocrBar = document.getElementById('selectorOcrBar');
+
+      box.style.display = 'block';
+      ocrVid.style.display = 'block';
+      ocrBox.style.display = 'flex';
+      ocrBar.style.display = 'flex';
+
+      try {
+        selectorOcrStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+        ocrVid.srcObject = selectorOcrStream;
+        await ocrVid.play();
+
+        if (!ocrWorker) {
+          document.getElementById('lblOcrDetected').textContent = 'OCR準備中...';
+          ocrWorker = await Tesseract.createWorker('eng');
+          await ocrWorker.setParameters({
+            tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_',
+            tessedit_pageseg_mode: '7'
+          });
+        }
+        document.getElementById('lblOcrDetected').textContent = '読取中...';
+        selectorOcrTimer = setInterval(processSelectorOcrFrame, 450);
+      } catch (err) {
+        alert('OCRカメラ起動エラー: ' + err.message);
+        stopSelectorCamera();
       }
     }
 
-    // --- 2. 検査枠（ROI）管理とメモリ解放 ---
+    function getOtsuThreshold(grayData) {
+      const hist = new Array(256).fill(0);
+      const total = grayData.length;
+      for (let i = 0; i < total; i++) hist[grayData[i]]++;
+      let sum = 0;
+      for (let t = 0; t < 256; t++) sum += t * hist[t];
+      let sumB = 0, wB = 0, varMax = 0, threshold = 128;
+      for (let t = 0; t < 256; t++) {
+        wB += hist[t];
+        if (wB === 0) continue;
+        const wF = total - wB;
+        if (wF === 0) break;
+        sumB += t * hist[t];
+        const mB = sumB / wB;
+        const mF = (sum - sumB) / wF;
+        const varBetween = wB * wF * (mB - mF) * (mB - mF);
+        if (varBetween > varMax) { varMax = varBetween; threshold = t; }
+      }
+      return threshold;
+    }
+
+    async function processSelectorOcrFrame() {
+      if (isOcrBusy || !selectorOcrStream) return;
+      const vid = document.getElementById('selectorOcrVideo');
+      const cCanvas = document.getElementById('ocrCropCanvas');
+      if (!vid || vid.videoWidth === 0) return;
+
+      isOcrBusy = true;
+      const cw = Math.floor(vid.videoWidth * 0.75);
+      const ch = Math.floor(vid.videoHeight * 0.12);
+      const sx = Math.floor((vid.videoWidth - cw) / 2);
+      const sy = Math.floor((vid.videoHeight - ch) / 2);
+
+      cCanvas.width = cw; cCanvas.height = ch;
+      const cCtx = cCanvas.getContext('2d', { willReadFrequently: true });
+      cCtx.drawImage(vid, sx, sy, cw, ch, 0, 0, cw, ch);
+
+      const imgData = cCtx.getImageData(0, 0, cw, ch);
+      const d = imgData.data;
+      const gray = new Uint8Array(d.length / 4);
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        gray[j] = Math.round(0.299 * d[i] + 0.587 * d[i+1] + 0.114 * d[i+2]);
+      }
+      const th = getOtsuThreshold(gray);
+      for (let i = 0, j = 0; i < d.length; i += 4, j++) {
+        const v = gray[j] > th ? 255 : 0;
+        d[i] = v; d[i+1] = v; d[i+2] = v;
+      }
+      cCtx.putImageData(imgData, 0, 0);
+
+      try {
+        const { data: { text } } = await ocrWorker.recognize(cCanvas);
+        const cleaned = normalizeCodeString(text).replace(/[^A-Za-z0-9_-]/g, '');
+        if (cleaned.length >= 2) {
+          document.getElementById('lblOcrDetected').textContent = cleaned;
+          const profiles = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+          // 登録済みプロファイルと完全一致したら自動遷移
+          if (profiles[cleaned]) {
+            beep(1300, 0.12);
+            transitionToInspector(cleaned);
+          }
+        }
+      } catch(e) {
+      } finally {
+        isOcrBusy = false;
+      }
+    }
+
+    function confirmOcrDetectedCode() {
+      const txt = document.getElementById('lblOcrDetected').textContent.trim();
+      if (!txt || txt === '---' || txt.includes('準備中') || txt.includes('読取中')) {
+        return alert('有効な文字列がまだ読み取られていません');
+      }
+      transitionToInspector(txt);
+    }
+
+    async function stopSelectorCamera() {
+      if (selectorOcrTimer) { clearInterval(selectorOcrTimer); selectorOcrTimer = null; }
+      if (selectorOcrStream) {
+        selectorOcrStream.getTracks().forEach(t => t.stop());
+        selectorOcrStream = null;
+      }
+      const ocrVid = document.getElementById('selectorOcrVideo');
+      if (ocrVid) { ocrVid.srcObject = null; }
+
+      if (selectorQrScanner) {
+        try {
+          if (selectorQrScanner.isScanning) await selectorQrScanner.stop();
+          await selectorQrScanner.clear();
+        } catch(e){}
+        selectorQrScanner = null;
+      }
+
+      document.getElementById('selectorCamBox').style.display = 'none';
+      document.getElementById('selectorQrReader').style.display = 'none';
+      document.getElementById('selectorOcrVideo').style.display = 'none';
+      document.getElementById('selectorOcrBox').style.display = 'none';
+      document.getElementById('selectorOcrBar').style.display = 'none';
+      isOcrBusy = false;
+    }
+
+    function handleManualPartCode() {
+      const inp = document.getElementById('txtScanPartInput');
+      const code = normalizeCodeString(inp.value);
+      if (!code) return alert('品番を入力またはスキャンしてください');
+      inp.value = '';
+      transitionToInspector(code);
+    }
+
+    document.getElementById('txtScanPartInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleManualPartCode();
+      }
+    });
+
+    function startWithSelectedDropdown() {
+      const code = document.getElementById('selStartProfile').value;
+      if (!code) return alert('プルダウンから品番を選択してください');
+      transitionToInspector(code);
+    }
+
+    // --- 画面遷移：品番確定 ➔ 検査画面へ ---
+    async function transitionToInspector(partCode) {
+      await stopSelectorCamera();
+      currentPartName = partCode;
+      document.getElementById('lblCurrentPartName').textContent = currentPartName;
+
+      document.getElementById('screenSelector').style.display = 'none';
+      document.getElementById('screenInspector').style.display = 'flex';
+      currentScreen = 'INSPECTOR';
+
+      loadProfileByName(currentPartName);
+      speakText(`品番 ${currentPartName} の検査画面を開きました`);
+
+      if (!isCamRunning) {
+        await startInspectorCam();
+      }
+    }
+
+    // --- 検査画面 ➔ 品番読取画面へ戻る ---
+    async function returnToSelectorScreen() {
+      stopInspectorCam();
+      document.getElementById('screenInspector').style.display = 'none';
+      document.getElementById('screenSelector').style.display = 'flex';
+      currentScreen = 'SELECTOR';
+      updateSelectorDropdown();
+      document.getElementById('selStartProfile').value = currentPartName;
+    }
+
+    // =========================================================
+    // 【画面2】 パン屋AI ＆ QR照合 マルチ検査ロジック
+    // =========================================================
+
+    // 特徴ベクトルのL2正規化抽出 (MobileNet Embedding)
+    function extractNormalizedEmbedding(roi) {
+      clampRoiToCanvas(roi);
+      cropCanvas.width = roi.w;
+      cropCanvas.height = roi.h;
+      cropCtx.drawImage(video, roi.x, roi.y, roi.w, roi.h, 0, 0, roi.w, roi.h);
+
+      return tf.tidy(() => {
+        const imgTensor = tf.browser.fromPixels(cropCanvas);
+        const emb = mobilenetModel.infer(imgTensor, true).squeeze();
+        const norm = tf.norm(emb);
+        const normalized = emb.div(norm.add(1e-7));
+        return Array.from(normalized.dataSync());
+      });
+    }
+
+    // コサイン類似度計算 (登録された複数枚の良品マスターとの最大一致率 0〜100%)
+    function calcBakerySimilarity(vec, samples) {
+      if (!samples || samples.length === 0) return 0;
+      let maxSim = -1.0;
+      for (let s = 0; s < samples.length; s++) {
+        const master = samples[s];
+        let dot = 0;
+        const len = Math.min(vec.length, master.length);
+        for (let i = 0; i < len; i++) {
+          dot += vec[i] * master[i];
+        }
+        if (dot > maxSim) maxSim = dot;
+      }
+      return Math.round(Math.max(0, Math.min(1, maxSim)) * 100);
+    }
+
+    // 枠内からQR/バーコードを切り抜いてデコード (余白パディング付きで高認識率)
+    async function decodeBarcodeFromRoi(roi) {
+      clampRoiToCanvas(roi);
+      const pad = 24;
+      const tempCanvas = document.createElement('canvas');
+      tempCanvas.width = roi.w + pad * 2;
+      tempCanvas.height = roi.h + pad * 2;
+      const tCtx = tempCanvas.getContext('2d');
+      tCtx.fillStyle = '#ffffff';
+      tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+      tCtx.drawImage(video, roi.x, roi.y, roi.w, roi.h, pad, pad, roi.w, roi.h);
+
+      // 1. ブラウザネイティブ BarcodeDetector が使える場合は最優先で試行
+      if ('BarcodeDetector' in window) {
+        try {
+          const detector = new BarcodeDetector();
+          const results = await detector.detect(tempCanvas);
+          if (results && results.length > 0 && results[0].rawValue) {
+            return normalizeCodeString(results[0].rawValue);
+          }
+        } catch(e){}
+      }
+
+      // 2. Html5Qrcode.scanFile でデコード
+      if (!roiQrScanner) {
+        roiQrScanner = new Html5Qrcode("hiddenRoiQrReader");
+      }
+      return new Promise((resolve) => {
+        tempCanvas.toBlob(async (blob) => {
+          if (!blob) return resolve(null);
+          const file = new File([blob], "roi_scan.png", { type: "image/png" });
+          try {
+            const decoded = await roiQrScanner.scanFile(file, false);
+            resolve(normalizeCodeString(decoded));
+          } catch (err) {
+            resolve(null);
+          }
+        }, 'image/png');
+      });
+    }
+
+    // --- ROI枠の生成・編集 ---
     function clampRoiToCanvas(r) {
-      r.w = Math.max(30, Math.min(canvas.width, Math.round(r.w)));
-      r.h = Math.max(30, Math.min(canvas.height, Math.round(r.h)));
+      r.w = Math.max(35, Math.min(canvas.width, Math.round(r.w)));
+      r.h = Math.max(35, Math.min(canvas.height, Math.round(r.h)));
       r.x = Math.max(0, Math.min(canvas.width - r.w, Math.round(r.x)));
       r.y = Math.max(0, Math.min(canvas.height - r.h, Math.round(r.y)));
     }
 
-    function createNewRoi(x, y, w, h, type = 'AI') {
-      const knn = (typeof knnClassifier !== 'undefined' && knnClassifier.create) ? knnClassifier.create() :
-                  (typeof tf !== 'undefined' && tf.knnClassifier) ? tf.knnClassifier.create() : null;
+    function createNewRoi(x, y, w, h, type = 'BAKERY') {
       const roi = {
         id: Date.now() + Math.random(),
         name: `枠 ${multiRois.length + 1}`,
         x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h),
-        type,
-        knn,
-        aiThreshold: 70,
-        okCount: 0,
-        ngCount: 0,
-        targetColor: '#ff0000',
-        tolerance: 40,
-        minRatio: 15,
+        type, // 'BAKERY' or 'BARCODE'
+        bakerySamples: [],
+        bakeryThreshold: 80,
+        expectedBarcode: '',
         lastStatus: '待機'
       };
       clampRoiToCanvas(roi);
       return roi;
     }
 
-    function disposeRoiKnn(roi) {
-      if (roi && roi.knn) {
-        try { roi.knn.clearAllClasses(); } catch(e){}
-      }
-    }
-
-    function addRoi(x, y, w, h, type = 'AI') {
+    function addRoi(x, y, w, h, type = 'BAKERY') {
       const roi = createNewRoi(x, y, w, h, type);
       multiRois.push(roi);
       activeRoiIndex = multiRois.length - 1;
@@ -549,19 +1033,15 @@
       const h = Math.round(canvas.height * 0.35);
       const x = Math.round((canvas.width - w) / 2);
       const y = Math.round((canvas.height - h) / 2);
-      addRoi(x, y, w, h, 'AI');
+      addRoi(x, y, w, h, 'BAKERY');
     }
 
-    // ★ 効率化機能：選択中の枠を同サイズで隣に複製 ★
     function duplicateActiveRoi() {
       const src = multiRois[activeRoiIndex];
       if (!src) return alert('複製元の枠を選択してください');
-      const offset = 25;
-      const newRoi = createNewRoi(src.x + offset, src.y + offset, src.w, src.h, src.type);
-      newRoi.aiThreshold = src.aiThreshold;
-      newRoi.targetColor = src.targetColor;
-      newRoi.tolerance = src.tolerance;
-      newRoi.minRatio = src.minRatio;
+      const newRoi = createNewRoi(src.x + 25, src.y + 25, src.w, src.h, src.type);
+      newRoi.bakeryThreshold = src.bakeryThreshold;
+      newRoi.expectedBarcode = src.expectedBarcode;
       multiRois.push(newRoi);
       activeRoiIndex = multiRois.length - 1;
       updateRoiListUI();
@@ -576,7 +1056,6 @@
 
     function deleteRoi(idx, e) {
       if (e) { e.stopPropagation(); e.preventDefault(); }
-      disposeRoiKnn(multiRois[idx]);
       multiRois.splice(idx, 1);
       if (activeRoiIndex >= multiRois.length) activeRoiIndex = Math.max(0, multiRois.length - 1);
       updateRoiListUI();
@@ -584,7 +1063,6 @@
     }
 
     function clearAllRois() {
-      multiRois.forEach(r => disposeRoiKnn(r));
       multiRois = [];
       activeRoiIndex = 0;
       updateRoiListUI();
@@ -620,7 +1098,6 @@
       drawCanvas();
     }
 
-    // --- 3. 枠リスト＆モード別設定UIの連動 ---
     function updateRoiListUI() {
       const container = document.getElementById('roiListContainer');
       container.innerHTML = '';
@@ -634,9 +1111,9 @@
           }
         });
 
-        const detailTxt = r.type === 'AI' 
-          ? `OK:${r.okCount}/NG:${r.ngCount} (閾値:${r.aiThreshold}%)`
-          : `目標:${r.targetColor} (面積:${r.minRatio}%)`;
+        const detailTxt = r.type === 'BAKERY' 
+          ? `マスター:${(r.bakerySamples || []).length}枚 (合格:${r.bakeryThreshold}%)`
+          : `正解:${r.expectedBarcode || currentPartName || '現在品番'}`;
 
         div.innerHTML = `
           <div style="flex:1; min-width:0; pointer-events:none;">
@@ -645,8 +1122,8 @@
           </div>
           <div style="display:flex; gap:4px; align-items:center; flex-shrink:0;">
             <select class="roi-type-select" onchange="changeRoiType(${idx}, this.value, event)" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();">
-              <option value="AI" ${r.type === 'AI' ? 'selected' : ''}>🤖 AI外観</option>
-              <option value="COLOR" ${r.type === 'COLOR' ? 'selected' : ''}>🟩 色面積</option>
+              <option value="BAKERY" ${r.type === 'BAKERY' ? 'selected' : ''}>🥐 パン屋AI照合</option>
+              <option value="BARCODE" ${r.type === 'BARCODE' ? 'selected' : ''}>📷 QR/バーコード</option>
             </select>
             <button class="btn btn-danger" style="padding:5px 9px; font-size:0.78rem;" onclick="deleteRoi(${idx}, event)" ontouchstart="event.stopPropagation();">×</button>
           </div>
@@ -655,29 +1132,26 @@
       });
 
       const ar = multiRois[activeRoiIndex];
-      const cardAI = document.getElementById('cardAI');
-      const cardColor = document.getElementById('cardColor');
+      const cardBakery = document.getElementById('cardBakery');
+      const cardBarcode = document.getElementById('cardBarcode');
 
       if (ar) {
-        if (ar.type === 'AI') {
-          cardAI.style.display = 'flex';
-          cardColor.style.display = 'none';
-          document.getElementById('lblActiveRoiAI').textContent = `${ar.name} (AI外観)`;
-          document.getElementById('countOk').textContent = ar.okCount;
-          document.getElementById('countNg').textContent = ar.ngCount;
-          document.getElementById('numAiThreshold').value = ar.aiThreshold || 70;
+        if (ar.type === 'BAKERY') {
+          cardBakery.style.display = 'flex';
+          cardBarcode.style.display = 'none';
+          document.getElementById('lblActiveRoiBakery').textContent = `${ar.name} (パン屋AI)`;
+          document.getElementById('countBakery').textContent = (ar.bakerySamples || []).length;
+          document.getElementById('numBakeryThreshold').value = ar.bakeryThreshold || 80;
         } else {
-          cardAI.style.display = 'none';
-          cardColor.style.display = 'flex';
-          document.getElementById('lblActiveRoiColor').textContent = `${ar.name} (色面積)`;
-          document.getElementById('colPicker').value = ar.targetColor || '#ff0000';
-          document.getElementById('numColorRatio').value = ar.minRatio || 15;
-          document.getElementById('numColorTol').value = ar.tolerance || 40;
+          cardBakery.style.display = 'none';
+          cardBarcode.style.display = 'flex';
+          document.getElementById('lblActiveRoiBarcode').textContent = `${ar.name} (QR/バーコード)`;
+          document.getElementById('txtExpectedBarcode').value = ar.expectedBarcode || '';
         }
       } else {
-        cardAI.style.display = 'flex';
-        cardColor.style.display = 'none';
-        document.getElementById('lblActiveRoiAI').textContent = '枠なし';
+        cardBakery.style.display = 'flex';
+        cardBarcode.style.display = 'none';
+        document.getElementById('lblActiveRoiBakery').textContent = '枠なし';
       }
     }
 
@@ -692,63 +1166,124 @@
 
     function updateActiveRoiThreshold(val) {
       const ar = multiRois[activeRoiIndex];
-      if (ar) { ar.aiThreshold = Math.max(1, Math.min(100, parseInt(val, 10) || 70)); updateRoiListUI(); }
-    }
-    function updateActiveRoiColor(val) {
-      const ar = multiRois[activeRoiIndex];
-      if (ar) { ar.targetColor = val; updateRoiListUI(); drawCanvas(); }
-    }
-    function updateActiveRoiColorRatio(val) {
-      const ar = multiRois[activeRoiIndex];
-      if (ar) { ar.minRatio = Math.max(1, Math.min(100, parseInt(val, 10) || 15)); updateRoiListUI(); }
-    }
-    function updateActiveRoiColorTol(val) {
-      const ar = multiRois[activeRoiIndex];
-      if (ar) { ar.tolerance = Math.max(5, Math.min(100, parseInt(val, 10) || 40)); updateRoiListUI(); }
+      if (ar) {
+        ar.bakeryThreshold = Math.max(1, Math.min(100, parseInt(val, 10) || 80));
+        updateRoiListUI();
+      }
     }
 
-    function toggleEyedropper() {
-      isEyedropper = !isEyedropper;
-      const btn = document.getElementById('btnEyedropper');
-      btn.className = isEyedropper ? 'btn btn-danger' : 'btn btn-outline';
-      btn.textContent = isEyedropper ? '🎯 映像上の色をタップ...' : '🎯 画面から色をスポイト';
+    function updateActiveRoiExpectedCode(val) {
+      const ar = multiRois[activeRoiIndex];
+      if (ar) {
+        ar.expectedBarcode = normalizeCodeString(val);
+        updateRoiListUI();
+      }
+    }
+
+    async function captureBarcodeToExpected() {
+      if (!isCamRunning) return alert('カメラを起動してください');
+      const ar = multiRois[activeRoiIndex];
+      if (!ar || ar.type !== 'BARCODE') return;
+
+      document.getElementById('aiLiveBadge').textContent = '枠内のコードを読み取り中...';
+      const code = await decodeBarcodeFromRoi(ar);
+      if (code) {
+        ar.expectedBarcode = code;
+        document.getElementById('txtExpectedBarcode').value = code;
+        ar.lastStatus = `読取:${code}`;
+        beep(1300, 0.1);
+        updateRoiListUI();
+        drawCanvas();
+        alert(`枠内のコード [${code}] を正解コードとして登録しました`);
+      } else {
+        beep(350, 0.25, 'square');
+        alert('枠内からQR/バーコードを読み取れませんでした。枠をコードより少し大きめに囲んでください。');
+      }
     }
 
     function toggleLiveAi() {
       liveAiEnabled = !liveAiEnabled;
       const btn = document.getElementById('btnLiveAiToggle');
-      btn.textContent = liveAiEnabled ? '⚡ 常時推論: ON' : '⚡ 常時推論: OFF(軽量)';
+      btn.textContent = liveAiEnabled ? '⚡ ライブ類似度表示: ON' : '⚡ ライブ類似度表示: OFF(軽量)';
       btn.className = liveAiEnabled ? 'btn btn-outline' : 'btn btn-dark';
     }
 
-    // --- 4. カメラ＆ライト制御 ---
-    async function toggleCam() {
+    // --- パン屋AIマスター登録処理 ---
+    function startBakeryRegister(e) {
+      if (e && e.cancelable) e.preventDefault();
+      if (!isCamRunning) return alert('カメラを起動してください');
+      const r = multiRois[activeRoiIndex];
+      if (!r || r.type !== 'BAKERY') return;
+      if (bakeryInterval) clearInterval(bakeryInterval);
+      registerOneBakerySample();
+      bakeryInterval = setInterval(registerOneBakerySample, 250);
+    }
+
+    function stopBakeryRegister() {
+      if (bakeryInterval) { clearInterval(bakeryInterval); bakeryInterval = null; }
+    }
+
+    function registerOneBakerySample() {
+      const r = multiRois[activeRoiIndex];
+      if (!mobilenetModel || !r || !isCamRunning || r.type !== 'BAKERY') return;
+      if (!r.bakerySamples) r.bakerySamples = [];
+      if (r.bakerySamples.length >= 40) {
+        stopBakeryRegister();
+        return alert('1枠につき最大40枚まで登録可能です');
+      }
+      const emb = extractNormalizedEmbedding(r);
+      r.bakerySamples.push(emb);
+      updateRoiListUI();
+      beep(1400, 0.05);
+    }
+
+    function clearBakerySamples() {
+      const r = multiRois[activeRoiIndex];
+      if (!r) return;
+      r.bakerySamples = [];
+      r.lastStatus = '未登録';
+      updateRoiListUI();
+      drawCanvas();
+    }
+
+    // --- 検査用カメラ制御 ---
+    async function startInspectorCam() {
       const btn = document.getElementById('btnCam');
-      if (isCamRunning) {
-        if (camStream) camStream.getTracks().forEach(t => t.stop());
-        video.pause();
-        isCamRunning = false;
-        btn.textContent = '📷 カメラ起動';
-      } else {
-        try {
-          camStream = await navigator.mediaDevices.getUserMedia({
-            video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' }
-          });
-          video.srcObject = camStream;
-          await video.play();
-          canvas.width = video.videoWidth || 640;
-          canvas.height = video.videoHeight || 480;
-          multiRois.forEach(r => clampRoiToCanvas(r));
-          isCamRunning = true;
-          btn.textContent = '⏹ カメラ停止';
-          document.getElementById('aiLiveBadge').textContent = 'カメラ稼働中';
-          requestAnimationFrame(renderLoop);
-        } catch(err) { alert('カメラ起動エラー: ' + err.message); }
+      try {
+        camStream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' }
+        });
+        video.srcObject = camStream;
+        await video.play();
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        multiRois.forEach(r => clampRoiToCanvas(r));
+        isCamRunning = true;
+        btn.textContent = '⏹ カメラ停止';
+        document.getElementById('aiLiveBadge').textContent = `品番 [${currentPartName}] 検査待機中`;
+        requestAnimationFrame(renderLoop);
+      } catch(err) {
+        alert('カメラ起動エラー: ' + err.message);
       }
     }
 
+    function stopInspectorCam() {
+      if (camStream) {
+        camStream.getTracks().forEach(t => t.stop());
+        camStream = null;
+      }
+      video.pause();
+      isCamRunning = false;
+      document.getElementById('btnCam').textContent = '📷 カメラ起動';
+    }
+
+    async function toggleInspectorCam() {
+      if (isCamRunning) stopInspectorCam();
+      else await startInspectorCam();
+    }
+
     async function toggleTorch() {
-      if (!camStream) return alert('先にカメラを起動してください');
+      if (!camStream) return alert('検査カメラ稼働中のみ使用できます');
       const track = camStream.getVideoTracks()[0];
       if (!track) return;
       try {
@@ -757,48 +1292,32 @@
         torchEnabled = !torchEnabled;
         await track.applyConstraints({ advanced: [{ torch: torchEnabled }] });
         document.getElementById('btnTorch').className = torchEnabled ? 'btn btn-warning' : 'btn btn-outline';
-      } catch(e) { alert('ライト切替に失敗しました'); }
+      } catch(e) { alert('ライト切替失敗'); }
     }
 
-    function getCroppedRoiTensor(roi) {
-      clampRoiToCanvas(roi);
-      cropCanvas.width = roi.w;
-      cropCanvas.height = roi.h;
-      cropCtx.drawImage(video, roi.x, roi.y, roi.w, roi.h, 0, 0, roi.w, roi.h);
-      return tf.browser.fromPixels(cropCanvas);
-    }
-
-    // --- 5. 重くならない非同期スロットリング描画ループ ---
+    // --- 描画＆ライブ推論ループ ---
     function renderLoop(timestamp) {
-      if (!isCamRunning) return;
+      if (!isCamRunning || currentScreen !== 'INSPECTOR') return;
       drawCanvas();
 
-      // 300msに1回、前の推論が完了している場合のみライブ判定を実行（フリーズ・発熱防止）
-      if (liveAiEnabled && !isLiveInferring && (timestamp - lastLiveInferTime > 300)) {
+      if (liveAiEnabled && !isLiveInferring && (timestamp - lastLiveInferTime > 320)) {
         lastLiveInferTime = timestamp;
-        runLiveInferenceSafe();
+        runLiveBakeryPreview();
       }
-
       requestAnimationFrame(renderLoop);
     }
 
-    async function runLiveInferenceSafe() {
+    async function runLiveBakeryPreview() {
       if (!isCamRunning) return;
       isLiveInferring = true;
       try {
         for (let i = 0; i < multiRois.length; i++) {
           const r = multiRois[i];
-          if (r.type === 'AI' && mobilenetModel && r.knn && r.knn.getNumClasses() > 0) {
-            const x = getCroppedRoiTensor(r);
-            const logits = mobilenetModel.infer(x, true);
-            const res = await r.knn.predictClass(logits, 5);
-            x.dispose();
-            logits.dispose();
-            const conf = Math.round((res.confidences[res.label] || 0) * 100);
-            r.lastStatus = `${res.label}(${conf}%)`;
-          } else if (r.type === 'COLOR') {
-            const ratio = calcColorRatio(r);
-            r.lastStatus = `色:${ratio}%`;
+          if (r.type === 'BAKERY' && mobilenetModel && r.bakerySamples && r.bakerySamples.length > 0) {
+            const vec = extractNormalizedEmbedding(r);
+            const sim = calcBakerySimilarity(vec, r.bakerySamples);
+            const ok = sim >= (r.bakeryThreshold || 80);
+            r.lastStatus = `${ok ? 'OK' : 'NG'}(${sim}%)`;
           }
         }
       } catch(e) {
@@ -807,21 +1326,6 @@
       }
     }
 
-    function calcColorRatio(r) {
-      clampRoiToCanvas(r);
-      const img = ctx.getImageData(r.x, r.y, r.w, r.h);
-      const d = img.data;
-      const trg = hexToRgb(r.targetColor);
-      let match = 0;
-      const tolDist = r.tolerance * 2;
-      for (let k = 0; k < d.length; k += 4) {
-        const dist = Math.hypot(d[k] - trg.r, d[k+1] - trg.g, d[k+2] - trg.b);
-        if (dist <= tolDist) match++;
-      }
-      return Math.round((match / (r.w * r.h)) * 100);
-    }
-
-    // --- 6. 文字のはみ出し・見切れを完全防止したキャンバス描画 ---
     function drawCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       if (isCamRunning && video.readyState >= 2) {
@@ -830,26 +1334,25 @@
 
       multiRois.forEach((r, idx) => {
         const isActive = idx === activeRoiIndex;
-        const strokeCol = isActive ? '#fde047' : (r.type === 'AI' ? '#c084fc' : '#4ade80');
+        const strokeCol = isActive ? '#fde047' : (r.type === 'BAKERY' ? '#c084fc' : '#22d3ee');
         ctx.strokeStyle = strokeCol;
-        ctx.lineWidth = isActive ? 3.5 : 2;
+        ctx.lineWidth = isActive ? 3.5 : 2.5;
         ctx.strokeRect(r.x, r.y, r.w, r.h);
 
         ctx.fillStyle = isActive ? 'rgba(253, 224, 71, 0.12)' : 'rgba(0, 0, 0, 0.1)';
         ctx.fillRect(r.x, r.y, r.w, r.h);
 
-        // ラベル文字の幅を自動計算し、上端見切れ・右端はみ出しを防止
-        const labelText = `${r.name}[${r.type === 'AI' ? 'AI' : '色'}]: ${r.lastStatus}`;
+        const tag = r.type === 'BAKERY' ? '🥐パン屋' : '📷コード';
+        const labelText = `${r.name}[${tag}]: ${r.lastStatus}`;
         ctx.font = 'bold 13px sans-serif';
         const textWidth = ctx.measureText(labelText).width;
         const boxW = Math.min(canvas.width, textWidth + 14);
         const boxH = 22;
 
-        // 画面上端に見切れる場合は枠の内側（下）に配置
         const labelX = Math.max(0, Math.min(canvas.width - boxW, r.x));
         const labelY = (r.y >= boxH + 2) ? (r.y - boxH) : r.y;
 
-        ctx.fillStyle = isActive ? '#0f172a' : 'rgba(15, 23, 42, 0.88)';
+        ctx.fillStyle = isActive ? '#0f172a' : 'rgba(15, 23, 42, 0.9)';
         ctx.fillRect(labelX, labelY, boxW, boxH);
         ctx.strokeStyle = strokeCol;
         ctx.lineWidth = 1;
@@ -883,7 +1386,7 @@
       ctx.stroke();
     }
 
-    // --- 7. タッチ＆マウスポインター操作（スポイト・リサイズ・移動・新規） ---
+    // --- タッチ＆マウスによる枠操作 ---
     function getCanvasCoords(e) {
       const rect = canvas.getBoundingClientRect();
       const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
@@ -914,18 +1417,6 @@
       const pos = getCanvasCoords(e);
       startX = pos.x; startY = pos.y;
       currentX = pos.x; currentY = pos.y;
-
-      // スポイトモード時
-      if (isEyedropper) {
-        const px = Math.min(canvas.width - 1, Math.max(0, Math.floor(pos.x)));
-        const py = Math.min(canvas.height - 1, Math.max(0, Math.floor(pos.y)));
-        const p = ctx.getImageData(px, py, 1, 1).data;
-        const hex = "#" + ((1 << 24) + (p[0] << 16) + (p[1] << 8) + p[2]).toString(16).slice(1);
-        updateActiveRoiColor(hex);
-        toggleEyedropper();
-        beep(1300, 0.08);
-        return;
-      }
 
       if (isRoiLocked) return;
 
@@ -978,18 +1469,18 @@
           activeRoi.w = initialRoi.w + dx;
           activeRoi.h = initialRoi.h + dy;
         } else if (resizeHandle === 'BL') {
-          const newW = Math.max(30, initialRoi.w - dx);
+          const newW = Math.max(35, initialRoi.w - dx);
           activeRoi.x = initialRoi.x + (initialRoi.w - newW);
           activeRoi.w = newW;
           activeRoi.h = initialRoi.h + dy;
         } else if (resizeHandle === 'TR') {
           activeRoi.w = initialRoi.w + dx;
-          const newH = Math.max(30, initialRoi.h - dy);
+          const newH = Math.max(35, initialRoi.h - dy);
           activeRoi.y = initialRoi.y + (initialRoi.h - newH);
           activeRoi.h = newH;
         } else if (resizeHandle === 'TL') {
-          const newW = Math.max(30, initialRoi.w - dx);
-          const newH = Math.max(30, initialRoi.h - dy);
+          const newW = Math.max(35, initialRoi.w - dx);
+          const newH = Math.max(35, initialRoi.h - dy);
           activeRoi.x = initialRoi.x + (initialRoi.w - newW);
           activeRoi.y = initialRoi.y + (initialRoi.h - newH);
           activeRoi.w = newW;
@@ -1006,8 +1497,8 @@
       if (dragMode === 'NEW') {
         const x = Math.min(startX, currentX), y = Math.min(startY, currentY);
         const w = Math.abs(currentX - startX), h = Math.abs(currentY - startY);
-        if (w > 30 && h > 30) {
-          addRoi(x, y, w, h, 'AI');
+        if (w > 35 && h > 35) {
+          addRoi(x, y, w, h, 'BAKERY');
         }
       }
       dragMode = null;
@@ -1023,104 +1514,62 @@
     canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
     canvas.addEventListener('touchend', handlePointerEnd);
 
-    // --- 8. AI学習処理 ---
-    function startLearning(label, e) {
-      if (e && e.cancelable) e.preventDefault();
-      if (!isCamRunning) return alert('先にカメラを起動してください');
-      const r = multiRois[activeRoiIndex];
-      if (!r) return alert('学習する枠を選択してください');
-      if (r.type !== 'AI') return alert('選択枠が「色面積」です。AI外観に切り替えてください');
-      if (learnInterval) clearInterval(learnInterval);
-      learnSample(label);
-      learnInterval = setInterval(() => learnSample(label), 220);
-    }
-
-    function stopLearning() {
-      if (learnInterval) { clearInterval(learnInterval); learnInterval = null; }
-    }
-
-    function learnSample(label) {
-      const r = multiRois[activeRoiIndex];
-      if (!mobilenetModel || !r || !r.knn || !isCamRunning || r.type !== 'AI') return;
-
-      const x = getCroppedRoiTensor(r);
-      const logits = mobilenetModel.infer(x, true);
-      r.knn.addExample(logits, label);
-      x.dispose();
-      logits.dispose();
-
-      if (label === 'OK') r.okCount++;
-      else r.ngCount++;
-
-      updateRoiListUI();
-      beep(label === 'OK' ? 1400 : 600, 0.05);
-    }
-
-    function clearAiClasses() {
-      const r = multiRois[activeRoiIndex];
-      if (!r || !r.knn) return;
-      r.knn.clearAllClasses();
-      r.okCount = 0;
-      r.ngCount = 0;
-      r.lastStatus = '未学習';
-      updateRoiListUI();
-      drawCanvas();
-    }
-
-    // --- 9. 一括マルチ枠検査実行 ---
+    // --- 一括検査実行 (パン屋AI ＆ QR/バーコード照合) ---
     async function executeInspection() {
       if (!isCamRunning) return alert('カメラを起動してください');
       if (multiRois.length === 0) return alert('検査枠を設定してください');
 
+      document.getElementById('aiLiveBadge').textContent = '🔍 全枠検査実行中...';
       let allPass = true;
       let ngReasons = [];
       let ngFrameNames = [];
 
-      drawCanvas();
-
       for (let i = 0; i < multiRois.length; i++) {
         const r = multiRois[i];
-        if (r.type === 'AI') {
-          if (!r.knn || r.knn.getNumClasses() === 0) {
+        if (r.type === 'BAKERY') {
+          if (!r.bakerySamples || r.bakerySamples.length === 0) {
             allPass = false;
-            ngReasons.push(`❌ <b>${r.name}</b>: AI未学習です`);
+            ngReasons.push(`❌ <b>${r.name}[パン屋AI]</b>: 良品マスターが未登録です`);
             ngFrameNames.push(r.name);
             continue;
           }
-          const x = getCroppedRoiTensor(r);
-          const logits = mobilenetModel.infer(x, true);
-          const res = await r.knn.predictClass(logits, 5);
-          x.dispose();
-          logits.dispose();
+          const vec = extractNormalizedEmbedding(r);
+          const sim = calcBakerySimilarity(vec, r.bakerySamples);
+          const th = r.bakeryThreshold || 80;
+          r.lastStatus = `${sim >= th ? 'OK' : 'NG'}(${sim}%)`;
 
-          const conf = Math.round((res.confidences[res.label] || 0) * 100);
-          const th = r.aiThreshold || 70;
-          r.lastStatus = `${res.label}(${conf}%)`;
-
-          if (res.label === 'OK' && conf >= th) {
-            // OK
-          } else {
+          if (sim < th) {
             allPass = false;
-            ngReasons.push(`❌ <b>${r.name}</b>: ${res.label}判定 (確信度:${conf}% / 基準:${th}%)`);
+            ngReasons.push(`❌ <b>${r.name}[パン屋AI]</b>: 類似度不足 (一致率:${sim}% / 基準:${th}%)`);
             ngFrameNames.push(r.name);
           }
-        } else if (r.type === 'COLOR') {
-          const ratio = calcColorRatio(r);
-          r.lastStatus = `色:${ratio}%`;
-          if (ratio < r.minRatio) {
+        } else if (r.type === 'BARCODE') {
+          const expected = r.expectedBarcode || currentPartName;
+          const scanned = await decodeBarcodeFromRoi(r);
+
+          if (!scanned) {
             allPass = false;
-            ngReasons.push(`❌ <b>${r.name}</b>: 色面積不足 (測定:${ratio}% / 基準:${r.minRatio}%)`);
+            r.lastStatus = 'NG(未検出)';
+            ngReasons.push(`❌ <b>${r.name}[コード照合]</b>: QR/バーコードが読み取れません (正解:${expected})`);
             ngFrameNames.push(r.name);
+          } else if (scanned !== expected) {
+            allPass = false;
+            r.lastStatus = `NG(${scanned})`;
+            ngReasons.push(`❌ <b>${r.name}[コード照合]</b>: コード不一致 (読取:${scanned} ≠ 正解:${expected})`);
+            ngFrameNames.push(r.name);
+          } else {
+            r.lastStatus = `OK(${scanned})`;
           }
         }
       }
 
       drawCanvas();
+      document.getElementById('aiLiveBadge').textContent = `品番 [${currentPartName}] 検査完了`;
 
       if (allPass) {
         statOkCount++;
         updateStatsUI();
-        notifyResult(true, `全 ${multiRois.length} 枠 総合合格`, '');
+        notifyResult(true, `品番[${currentPartName}] 全 ${multiRois.length} 枠 合格`, '');
       } else {
         statNgCount++;
         updateStatsUI();
@@ -1136,11 +1585,10 @@
       statOkCount = 0; statNgCount = 0; updateStatsUI();
     }
 
-    // --- 10. 音声合成・ビープ音・演出 ---
+    // --- 音声・フラッシュ・ロギング ---
     function toggleVoice() {
       voiceEnabled = !voiceEnabled;
-      const btn = document.getElementById('btnVoice');
-      btn.textContent = voiceEnabled ? '🔊 音声: ON' : '🔇 音声: OFF';
+      document.getElementById('btnVoice').textContent = voiceEnabled ? '🔊 音声: ON' : '🔇 音声: OFF';
     }
 
     function speakText(text) {
@@ -1176,8 +1624,7 @@
 
     function notifyResult(isOk, msgHtml, ngNames) {
       const worker = document.getElementById('lblWorker').textContent;
-      const profile = document.getElementById('selProfile').value || '未選択';
-      addLog(worker, profile, 'MULTI_ROI', isOk ? 'OK' : 'NG', msgHtml.replace(/<[^>]*>/g, ' '));
+      addLog(worker, currentPartName, isOk ? 'OK' : 'NG', msgHtml.replace(/<[^>]*>/g, ' '));
 
       if (isOk) {
         triggerFlash('OK');
@@ -1200,105 +1647,70 @@
     function saveNgEvidenceImage() {
       try {
         const link = document.createElement('a');
-        link.download = `NG_${Date.now()}.jpg`;
+        link.download = `NG_${currentPartName}_${Date.now()}.jpg`;
         link.href = canvas.toDataURL('image/jpeg', 0.85);
         link.click();
       } catch(e){}
     }
 
-    // --- 11. プロファイル保存・読込・JSON共有 ---
-    async function saveProfile() {
-      const name = document.getElementById('txtProfileName').value.trim() || document.getElementById('selProfile').value;
-      if (!name) return alert('保存するプロファイル名を入力してください');
-
-      const roisData = multiRois.map(r => {
-        let datasetObj = null;
-        if (r.knn && r.knn.getNumClasses() > 0) {
-          const dataset = r.knn.getClassifierDataset();
-          datasetObj = {};
-          Object.keys(dataset).forEach((key) => {
-            datasetObj[key] = { data: Array.from(dataset[key].dataSync()), shape: dataset[key].shape };
-          });
-        }
-        return {
-          name: r.name, x: r.x, y: r.y, w: r.w, h: r.h, type: r.type,
-          aiThreshold: r.aiThreshold || 70,
-          okCount: r.okCount, ngCount: r.ngCount,
-          targetColor: r.targetColor, tolerance: r.tolerance, minRatio: r.minRatio,
-          dataset: datasetObj
-        };
-      });
+    // --- プロファイル保存・読込・JSON共有 ---
+    function saveCurrentProfile() {
+      if (!currentPartName) return alert('品番が設定されていません');
+      const roisData = multiRois.map(r => ({
+        name: r.name, x: r.x, y: r.y, w: r.w, h: r.h, type: r.type,
+        bakerySamples: r.bakerySamples || [],
+        bakeryThreshold: r.bakeryThreshold || 80,
+        expectedBarcode: r.expectedBarcode || ''
+      }));
 
       try {
-        const p = JSON.parse(localStorage.getItem('inspect_profiles_v13') || '{}');
-        p[name] = { roisData };
-        localStorage.setItem('inspect_profiles_v13', JSON.stringify(p));
-        updateProfileList();
-        document.getElementById('selProfile').value = name;
-        alert(`プロファイル [${name}] を保存しました`);
+        const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        p[currentPartName] = { roisData };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+        updateSelectorDropdown();
+        alert(`品番 [${currentPartName}] の検査枠・パン屋マスター設定を保存しました`);
       } catch(err) {
-        alert('ブラウザ容量上限のため保存できませんでした。JSON書出をご利用ください。');
+        alert('保存容量上限に達しました。JSON書出をご利用ください。');
       }
     }
 
-    async function loadProfile() {
-      const name = document.getElementById('selProfile').value;
-      if (!name) return;
-      const p = JSON.parse(localStorage.getItem('inspect_profiles_v13') || '{}')[name];
-      if (!p) return;
-
+    function loadProfileByName(name) {
+      const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')[name];
       clearAllRois();
 
-      (p.roisData || []).forEach(rd => {
-        const roi = createNewRoi(rd.x, rd.y, rd.w, rd.h, rd.type);
-        roi.name = rd.name;
-        roi.aiThreshold = rd.aiThreshold || 70;
-        roi.okCount = rd.okCount || 0;
-        roi.ngCount = rd.ngCount || 0;
-        roi.targetColor = rd.targetColor || '#ff0000';
-        roi.tolerance = rd.tolerance || 40;
-        roi.minRatio = rd.minRatio || 15;
-
-        if (roi.knn && rd.dataset) {
-          const tensorObj = {};
-          Object.keys(rd.dataset).forEach((key) => {
-            tensorObj[key] = tf.tensor(rd.dataset[key].data, rd.dataset[key].shape);
-          });
-          roi.knn.setClassifierDataset(tensorObj);
-        }
-        multiRois.push(roi);
-      });
-
+      if (p && p.roisData && p.roisData.length > 0) {
+        p.roisData.forEach(rd => {
+          const roi = createNewRoi(rd.x, rd.y, rd.w, rd.h, rd.type || 'BAKERY');
+          roi.name = rd.name;
+          roi.bakerySamples = rd.bakerySamples || [];
+          roi.bakeryThreshold = rd.bakeryThreshold || 80;
+          roi.expectedBarcode = rd.expectedBarcode || '';
+          multiRois.push(roi);
+        });
+      } else {
+        // 新規品番の場合は初期枠を1つ自動配置
+        addRoi(60, 60, 220, 220, 'BAKERY');
+      }
       activeRoiIndex = 0;
       updateRoiListUI();
       drawCanvas();
     }
 
-    function deleteProfile() {
-      const name = document.getElementById('selProfile').value;
-      if (!name || !confirm(`プロファイル [${name}] を削除しますか？`)) return;
-      const p = JSON.parse(localStorage.getItem('inspect_profiles_v13') || '{}');
+    function deleteProfileFromStart() {
+      const name = document.getElementById('selStartProfile').value;
+      if (!name || !confirm(`登録品番 [${name}] を削除しますか？`)) return;
+      const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
       delete p[name];
-      localStorage.setItem('inspect_profiles_v13', JSON.stringify(p));
-      updateProfileList();
-    }
-
-    function updateProfileList() {
-      const sel = document.getElementById('selProfile');
-      const p = JSON.parse(localStorage.getItem('inspect_profiles_v13') || '{}');
-      sel.innerHTML = '<option value="">-- プロファイル選択 --</option>';
-      Object.keys(p).forEach(k => {
-        const opt = document.createElement('option'); opt.value = k; opt.textContent = k;
-        sel.appendChild(opt);
-      });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
+      updateSelectorDropdown();
     }
 
     function exportProfilesJson() {
-      const p = localStorage.getItem('inspect_profiles_v13') || '{}';
+      const p = localStorage.getItem(STORAGE_KEY) || '{}';
       const blob = new Blob([p], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `Inspect_Profiles_${Date.now()}.json`;
+      a.download = `Bakery_QR_Profiles_${Date.now()}.json`;
       a.click();
     }
 
@@ -1309,35 +1721,15 @@
       reader.onload = function(evt) {
         try {
           const imported = JSON.parse(evt.target.result);
-          const current = JSON.parse(localStorage.getItem('inspect_profiles_v13') || '{}');
+          const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
           const merged = Object.assign({}, current, imported);
-          localStorage.setItem('inspect_profiles_v13', JSON.stringify(merged));
-          updateProfileList();
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+          updateSelectorDropdown();
           alert('JSON設定ファイルを正常に読み込みました');
         } catch(err) { alert('JSON読込エラー: ' + err.message); }
       };
       reader.readAsText(file);
       e.target.value = '';
-    }
-
-    function hexToRgb(hex) {
-      const num = parseInt((hex || '#ff0000').replace('#',''), 16);
-      return { r: (num>>16)&255, g: (num>>8)&255, b: num&255 };
-    }
-
-    function scanQrProfile() {
-      const qrHid = document.getElementById('qrReaderHidden');
-      qrHid.style.display = 'block';
-      const scanner = new Html5Qrcode("qrReaderHidden");
-      scanner.start({ facingMode: "environment" }, { fps: 15, qrbox: 180 }, (text) => {
-        scanner.stop().then(() => { qrHid.style.display = 'none'; }).catch(()=>{ qrHid.style.display = 'none'; });
-        document.getElementById('selProfile').value = text.trim();
-        loadProfile();
-        speakText(`${text.trim()} を読み込みました`);
-      }, () => {}).catch(e => {
-        alert('QRスキャン起動失敗: ' + e);
-        qrHid.style.display = 'none';
-      });
     }
 
     function setWorker() {
@@ -1348,17 +1740,17 @@
       document.getElementById('txtWorker').value = '';
     }
 
-    function addLog(worker, profile, mode, result, note) {
-      const logs = JSON.parse(localStorage.getItem('inspect_logs_v13') || '[]');
-      logs.unshift({ date: new Date().toLocaleString(), worker, profile, mode, result, note });
-      localStorage.setItem('inspect_logs_v13', JSON.stringify(logs.slice(0, 500)));
+    function addLog(worker, profile, result, note) {
+      const logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      logs.unshift({ date: new Date().toLocaleString(), worker, profile, result, note });
+      localStorage.setItem(LOG_KEY, JSON.stringify(logs.slice(0, 500)));
     }
 
     function exportLogsCSV() {
-      const logs = JSON.parse(localStorage.getItem('inspect_logs_v13') || '[]');
-      let csv = '日時,担当者,プロファイル,モード,結果,詳細\r\n';
+      const logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      let csv = '日時,担当者,品番,結果,詳細\r\n';
       logs.forEach(l => {
-        csv += `"${l.date}","${l.worker}","${l.profile}","${l.mode}","${l.result}","${l.note}"\r\n`;
+        csv += `"${l.date}","${l.worker}","${l.profile}","${l.result}","${l.note}"\r\n`;
       });
       const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a');
@@ -1367,7 +1759,6 @@
       a.click();
     }
 
-    // Space / Enter キーでの検査＆NG画面解除対応
     window.addEventListener('keydown', (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
       const ngOverlay = document.getElementById('ngLockOverlay');
@@ -1378,7 +1769,7 @@
         }
         return;
       }
-      if (e.code === 'Space') {
+      if (currentScreen === 'INSPECTOR' && e.code === 'Space') {
         e.preventDefault();
         executeInspection();
       }
@@ -1386,8 +1777,7 @@
 
     window.onload = async () => {
       canvas.width = 640; canvas.height = 480;
-      updateProfileList();
-      drawCanvas();
+      updateSelectorDropdown();
       await initAI();
     };
   </script>
