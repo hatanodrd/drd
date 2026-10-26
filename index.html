@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>パン屋AI＆QR照合 マルチ枠検査システム</title>
+  <title>順番ステップ式 パン屋AI＆QR照合システム</title>
   
   <!-- TensorFlow.js & MobileNet (パン屋AI特徴抽出用) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.20.0/dist/tf.min.js"></script>
@@ -57,24 +57,24 @@
 
     header {
       background: var(--primary);
-      padding: 8px 14px;
+      padding: 8px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       box-shadow: 0 2px 4px rgba(0,0,0,0.15);
       flex-shrink: 0;
     }
-    header h3 { color: #ffffff !important; font-size: 1rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    header h3 { color: #ffffff !important; font-size: 0.98rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
     .top-bar {
       background: #e2e8f0;
-      padding: 6px 14px;
+      padding: 5px 12px;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 6px;
-      font-size: 0.82rem;
+      font-size: 0.8rem;
       font-weight: bold;
       border-bottom: 1.5px solid var(--border-color);
       flex-shrink: 0;
@@ -83,17 +83,17 @@
     .counter-badge {
       background: #ffffff;
       border: 1.5px solid var(--border-color);
-      padding: 3px 10px;
+      padding: 2px 10px;
       border-radius: 4px;
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       display: flex;
       gap: 10px;
       align-items: center;
     }
 
-    /* 共通ボタン・入力欄スタイル（白背景・黒枠・文字はみ出し防止） */
+    /* ボタン・入力欄（背景と文字の同化・はみ出し防止） */
     .btn {
-      padding: 7px 12px;
+      padding: 7px 11px;
       border: 1.5px solid #1e293b;
       border-radius: 5px;
       font-weight: bold;
@@ -122,7 +122,7 @@
     .btn-group { display: flex; gap: 6px; flex-wrap: wrap; }
 
     input[type="text"], input[type="number"], select {
-      padding: 6px 10px;
+      padding: 6px 8px;
       background-color: #ffffff !important;
       color: #0f172a !important;
       border: 1.5px solid #334155;
@@ -132,7 +132,7 @@
     }
 
     .sec-title {
-      font-size: 0.88rem;
+      font-size: 0.86rem;
       font-weight: bold;
       color: #0f172a;
       border-left: 5px solid var(--primary);
@@ -145,20 +145,20 @@
        ================================================= */
     #screenSelector {
       flex: 1;
-      padding: 14px;
-      max-width: 780px;
+      padding: 12px;
+      max-width: 760px;
       width: 100%;
       margin: 0 auto;
       display: flex;
       flex-direction: column;
-      gap: 14px;
+      gap: 12px;
     }
 
     .selector-card {
       background: #ffffff;
       border: 2px solid #94a3b8;
       border-radius: 8px;
-      padding: 14px;
+      padding: 12px;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -181,7 +181,6 @@
     #selectorQrReader video { object-fit: cover !important; }
     #selectorOcrVideo { width: 100%; height: 100%; object-fit: cover; display: none; }
 
-    /* OCR用スリムターゲット枠 */
     .ocr-scan-box {
       position: absolute;
       top: 50%;
@@ -229,7 +228,7 @@
     }
 
     /* =================================================
-       画面2: マルチ枠検査画面 (#screenInspector)
+       画面2: 順番ステップ検査画面 (#screenInspector)
        ================================================= */
     #screenInspector {
       display: none;
@@ -240,8 +239,65 @@
       height: calc(100vh - 82px);
     }
 
+    .left-col {
+      flex: 2.6;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      overflow: hidden;
+    }
+
+    /* 現在のステップを大きく案内するナビゲーションバナー */
+    .step-nav-banner {
+      background: #1e293b;
+      border: 2px solid #0f172a;
+      border-radius: 6px;
+      padding: 8px 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      flex-shrink: 0;
+    }
+    .step-progress-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+    }
+    .step-badge {
+      background: #facc15;
+      color: #0f172a !important;
+      font-weight: 900;
+      font-size: 0.9rem;
+      padding: 2px 10px;
+      border-radius: 4px;
+    }
+    .step-title-text {
+      color: #ffffff !important;
+      font-size: 1rem;
+      font-weight: bold;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .step-dots {
+      display: flex;
+      gap: 5px;
+      flex-wrap: wrap;
+      margin-top: 2px;
+    }
+    .step-dot {
+      flex: 1;
+      min-width: 40px;
+      height: 8px;
+      border-radius: 4px;
+      background: #475569;
+    }
+    .step-dot.done { background: #22c55e; }
+    .step-dot.current { background: #facc15; box-shadow: 0 0 6px #facc15; }
+
     .viewport {
-      flex: 3;
+      flex: 1;
       background: #0f172a;
       border-radius: 6px;
       border: 2px solid #334155;
@@ -270,7 +326,7 @@
       border: 1px solid #94a3b8;
       padding: 4px 10px;
       border-radius: 4px;
-      font-size: 0.8rem;
+      font-size: 0.82rem;
       font-weight: bold;
       z-index: 10;
       max-width: 92%;
@@ -280,7 +336,7 @@
     }
 
     .panel {
-      flex: 1.65;
+      flex: 1.7;
       background: var(--panel);
       border-radius: 6px;
       border: 1.5px solid var(--border-color);
@@ -317,14 +373,14 @@
     .mode-card.qr-theme { background: #ecfeff; border-color: #0891b2; }
 
     .roi-list-box {
-      max-height: 135px;
+      max-height: 165px;
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 5px;
       border: 1.5px solid #64748b;
-      padding: 4px;
-      border-radius: 4px;
+      padding: 5px;
+      border-radius: 5px;
       background: #f1f5f9;
     }
 
@@ -333,20 +389,24 @@
       align-items: center;
       justify-content: space-between;
       background: #ffffff;
-      padding: 5px 8px;
-      border-radius: 4px;
+      padding: 6px 8px;
+      border-radius: 5px;
       font-size: 0.8rem;
-      border: 1px solid #94a3b8;
+      border: 1.5px solid #94a3b8;
       gap: 6px;
+      flex-wrap: wrap;
     }
     .roi-item.active {
-      border: 2px solid var(--primary);
+      border: 2.5px solid var(--primary);
       background: #e0f2fe;
+    }
+    .roi-item.passed {
+      border-left: 6px solid var(--success);
     }
 
     .roi-type-select {
       width: auto !important;
-      min-width: 115px;
+      min-width: 112px;
       padding: 4px 6px !important;
       font-size: 0.78rem !important;
       background-color: #ffffff !important;
@@ -372,6 +432,7 @@
       gap: 4px;
     }
 
+    /* NGロック画面 & 全工程完了オーバーレイ */
     .lock-overlay {
       position: fixed;
       inset: 0;
@@ -387,13 +448,29 @@
     }
     .lock-overlay h1, .lock-overlay div { color: #ffffff !important; }
 
+    .complete-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(21, 128, 61, 0.95);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      text-align: center;
+      padding: 20px;
+    }
+    .complete-overlay h1, .complete-overlay p { color: #ffffff !important; }
+
     @media (max-width: 768px) {
       #screenInspector {
         flex-direction: column;
         height: auto;
         overflow: visible;
       }
-      .viewport { flex: none; width: 100%; aspect-ratio: 4 / 3; max-height: 42vh; }
+      .left-col { flex: none; width: 100%; }
+      .viewport { flex: none; width: 100%; aspect-ratio: 4 / 3; max-height: 40vh; }
       .panel { flex: none; width: 100%; overflow-y: visible; }
       .btn { padding: 9px 10px; font-size: 0.85rem; }
       .roi-type-select, input[type="text"], input[type="number"], select {
@@ -405,11 +482,10 @@
 <body>
 
   <div id="borderFlash"></div>
-  <!-- 枠内QRデコード用の非表示リーダー -->
   <div id="hiddenRoiQrReader" style="display:none;"></div>
 
   <header>
-    <h3>🥐 パン屋AI＆QR照合 マルチ検査システム</h3>
+    <h3>🥐 順番ステップ式 パン屋AI＆QR照合</h3>
     <div style="display:flex; gap:4px;">
       <button id="btnVoice" class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="toggleVoice()">🔊 音声: ON</button>
       <button id="btnTorch" class="btn btn-outline" style="padding:4px 8px; font-size:0.75rem;" onclick="toggleTorch()">🔦 ライト</button>
@@ -424,7 +500,7 @@
       <button class="btn btn-primary" style="padding:3px 8px;" onclick="setWorker()">登録</button>
     </div>
     <div class="counter-badge">
-      <span style="color:#2e7d32;">OK: <b id="statOk" style="color:#2e7d32;">0</b></span>
+      <span style="color:#2e7d32;">完了OK: <b id="statOk" style="color:#2e7d32;">0</b></span>
       <span style="color:#c62828;">NG: <b id="statNg" style="color:#c62828;">0</b></span>
       <button class="btn btn-outline" style="padding:1px 6px; font-size:0.72rem;" onclick="resetStats()">リセット</button>
     </div>
@@ -437,7 +513,7 @@
     <div class="selector-card">
       <div class="sec-title">① QR・バーコード / 文字(OCR) で品番を読み取る</div>
       <div style="font-size:0.82rem; color:#334155;">
-        指示書や現品票のコード、または印字された品番をカメラで読み取ると、自動的に検査画面へ進みます。
+        指示書や現品票のコード、または印字された品番をカメラで読み取ると、自動的にステップ検査画面へ進みます。
       </div>
 
       <div class="btn-group">
@@ -445,7 +521,6 @@
         <button class="btn btn-bakery" style="flex:1; padding:12px;" onclick="startSelectorOcrScan()">🔤 文字(OCR)で品番読取</button>
       </div>
 
-      <!-- カメラプレビュー枠（スキャン起動時に表示） -->
       <div class="scan-camera-box" id="selectorCamBox">
         <div id="selectorQrReader"></div>
         <video id="selectorOcrVideo" playsinline autoplay muted></video>
@@ -455,7 +530,6 @@
         <button class="btn btn-danger" style="position:absolute; top:8px; right:8px; z-index:30; padding:4px 10px;" onclick="stopSelectorCamera()">✖ カメラ停止</button>
       </div>
 
-      <!-- OCR認識結果確認＆手動確定バー -->
       <div class="ocr-preview-bar" id="selectorOcrBar">
         <span>2値化:</span>
         <canvas id="ocrCropCanvas"></canvas>
@@ -463,14 +537,12 @@
         <button class="btn btn-success" style="margin-left:auto; padding:4px 10px;" onclick="confirmOcrDetectedCode()">この文字で決定 ➔</button>
       </div>
 
-      <!-- ハンディスキャナ / 手入力欄 -->
       <div style="display:flex; gap:6px; margin-top:4px;">
-        <input type="text" id="txtScanPartInput" placeholder="ハンディスキャナ読取 または 品番手入力" style="flex:1;" autocomplete="off">
+        <input type="text" id="txtScanPartInput" placeholder="ハンディスキャナ読取 または 新規品番手入力" style="flex:1;" autocomplete="off">
         <button class="btn btn-primary" onclick="handleManualPartCode()">品番決定 ➔</button>
       </div>
     </div>
 
-    <!-- 各種コードが無い場合：プルダウンから登録品番を呼び出す -->
     <div class="selector-card">
       <div class="sec-title">② コードが無い場合：登録済み品番リストから呼び出す</div>
       <div style="display:flex; gap:6px; flex-wrap:wrap;">
@@ -480,7 +552,6 @@
       </div>
     </div>
 
-    <!-- JSON設定ファイルの入出力・AI初期化状態 -->
     <div class="selector-card">
       <div class="sec-title">③ 品番データ共有 (JSON入出力) ＆ AIエンジン状態</div>
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
@@ -495,22 +566,42 @@
   </div>
 
   <!-- =========================================================
-       【画面2】 マルチ枠検査画面 (#screenInspector)
+       【画面2】 順番ステップ検査画面 (#screenInspector)
        ========================================================= -->
   <div id="screenInspector">
-    <!-- カメラ映像エリア -->
-    <div class="viewport">
-      <div id="aiLiveBadge">カメラ準備中...</div>
-      <video id="videoSource" playsinline autoplay muted></video>
-      <canvas id="mainCanvas"></canvas>
+    <!-- 左/上部：ステップ案内バナー ＆ カメラ映像 ＆ 検査実行ボタン -->
+    <div class="left-col">
+      <!-- 現在のステップ案内バナー -->
+      <div class="step-nav-banner">
+        <div class="step-progress-row">
+          <span class="step-badge" id="lblStepBadge">Step 1 / 1</span>
+          <span class="step-title-text" id="lblStepInstruction">ワークを置いて検査ボタンを押してください</span>
+        </div>
+        <div class="step-dots" id="stepDotsContainer"></div>
+      </div>
+
+      <!-- カメラビューポート -->
+      <div class="viewport">
+        <div id="aiLiveBadge">カメラ準備中...</div>
+        <video id="videoSource" playsinline autoplay muted></video>
+        <canvas id="mainCanvas"></canvas>
+      </div>
+
+      <!-- 検査実行ボタン（最優先・大型ボタン） -->
+      <div class="btn-group">
+        <button id="btnExecuteStep" class="btn btn-success" style="flex:2.2; padding:14px 10px; font-size:1.08rem;" onclick="executeCurrentStepInspection()">
+          🔍 このステップを検査 (タップ / Space)
+        </button>
+        <button id="btnCam" class="btn btn-primary" style="flex:0.8;" onclick="toggleInspectorCam()">⏹ 停止</button>
+      </div>
     </div>
 
-    <!-- 操作パネルエリア -->
+    <!-- 右/下部：ステップ管理・パン屋AI/QR登録パネル -->
     <div class="panel">
       <!-- 品番表示 ＆ 品番読取画面へ戻るボタン -->
       <div class="active-part-banner">
         <div>
-          <span style="font-size:0.75rem; color:#475569; font-weight:bold;">現在の検査品番:</span>
+          <span style="font-size:0.74rem; color:#475569; font-weight:bold;">検査中の品番:</span>
           <div id="lblCurrentPartName" style="font-size:1.05rem; font-weight:bold; color:#0f172a;">未選択</div>
         </div>
         <div style="display:flex; gap:4px;">
@@ -519,24 +610,16 @@
         </div>
       </div>
 
-      <!-- 1. 検査実行・カメラ制御 -->
-      <div id="secAction">
-        <div class="btn-group">
-          <button id="btnCam" class="btn btn-primary" style="flex:1;" onclick="toggleInspectorCam()">📷 カメラ停止</button>
-          <button class="btn btn-success" style="flex:1.7; font-size:1rem;" onclick="executeInspection()">🔍 全枠一括検査 (Space)</button>
-        </div>
-      </div>
-
-      <!-- 2. 選択枠の個別設定（パン屋AI または QR/バーコード照合 に自動切替） -->
+      <!-- 選択ステップの個別設定（パン屋AI または QR/バーコード照合） -->
       <div id="secModeSetting">
-        <!-- 2-A. パン屋AI照合パネル -->
+        <!-- A. パン屋AI照合パネル -->
         <div id="cardBakery" class="mode-card bakery-theme">
           <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:4px;">
-            <b style="font-size:0.84rem; color:var(--bakery-color);">🥐 パン屋AI照合 (良品マスター特徴記憶)</b>
-            <span id="lblActiveRoiBakery" style="font-size:0.78rem; font-weight:bold; color:var(--primary);">枠 1</span>
+            <b style="font-size:0.84rem; color:var(--bakery-color);">🥐 パン屋AI照合 (現在のステップの良品登録)</b>
+            <span id="lblActiveStepBakery" style="font-size:0.78rem; font-weight:bold; color:var(--primary);">Step 1</span>
           </div>
           <div style="font-size:0.74rem; color:#334155;">
-            枠内に良品ワークを収めて登録してください（少しずつ向きを変えて複数枚登録すると個体差に強くなります）。
+            カメラにこのステップの良品ワークを映して登録してください（複数枚登録で角度差に強くなります）。
           </div>
           <div style="display:flex; gap:6px;">
             <button class="btn btn-bakery" style="flex:1; padding:10px 6px;" onmousedown="startBakeryRegister()" onmouseup="stopBakeryRegister()" onmouseleave="stopBakeryRegister()" ontouchstart="startBakeryRegister(event)" ontouchend="stopBakeryRegister()">
@@ -546,60 +629,62 @@
           </div>
           <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.78rem;">
             <span>パン屋AI 類似度合格ライン(%):</span>
-            <input type="number" id="numBakeryThreshold" value="80" min="1" max="100" style="width:68px; text-align:center;" onchange="updateActiveRoiThreshold(this.value)">
-          </div>
-          <div style="display:flex; gap:4px;">
-            <button id="btnLiveAiToggle" class="btn btn-outline" style="flex:1; font-size:0.74rem;" onclick="toggleLiveAi()">⚡ ライブ類似度表示: ON</button>
+            <input type="number" id="numBakeryThreshold" value="80" min="1" max="100" style="width:68px; text-align:center;" onchange="updateActiveStepThreshold(this.value)">
           </div>
         </div>
 
-        <!-- 2-B. QR / バーコード照合パネル -->
+        <!-- B. QR / バーコード照合パネル -->
         <div id="cardBarcode" class="mode-card qr-theme" style="display:none;">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <b style="font-size:0.84rem; color:var(--qr-color);">📷 枠内 QR / バーコード照合設定</b>
-            <span id="lblActiveRoiBarcode" style="font-size:0.78rem; font-weight:bold; color:var(--primary);">枠 1</span>
+            <b style="font-size:0.84rem; color:var(--qr-color);">📷 QR / バーコード照合 (現在のステップ)</b>
+            <span id="lblActiveStepBarcode" style="font-size:0.78rem; font-weight:bold; color:var(--primary);">Step 1</span>
           </div>
           <div style="font-size:0.74rem; color:#334155;">
-            枠内のQR・バーコードを読み取り、下の「正解コード」と一致するか照合します（空欄時は現在の品番と一致するか判定）。
+            このステップで照合する「正解コード」を設定します（空欄時は現在の品番と一致するか判定）。
           </div>
           <div style="display:flex; gap:4px; align-items:center;">
-            <input type="text" id="txtExpectedBarcode" placeholder="正解コード (空欄=現在品番と照合)" style="flex:1;" onchange="updateActiveRoiExpectedCode(this.value)">
+            <input type="text" id="txtExpectedBarcode" placeholder="正解コード (空欄=現在品番と照合)" style="flex:1;" onchange="updateActiveStepExpectedCode(this.value)">
           </div>
           <div style="display:flex; gap:4px;">
-            <button class="btn btn-qr" style="flex:1; padding:8px;" onclick="captureBarcodeToExpected()">🎯 今の枠内コードを読取って正解に登録</button>
+            <button class="btn btn-qr" style="flex:1; padding:8px;" onclick="captureBarcodeToExpected()">🎯 今映っているコードを読取って正解に登録</button>
           </div>
         </div>
       </div>
 
-      <!-- 3. マルチ検査枠管理 ＆ サイズ・位置調整 -->
+      <!-- 順番ステップ編成リスト（追加・順番入替・名称変更） -->
       <div id="secRoi">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-          <span class="sec-title" style="margin-bottom:0;">検査枠リスト (画面ドラッグで追加)</span>
-          <button id="btnToggleLock" class="btn btn-warning" style="padding:3px 8px; font-size:0.75rem;" onclick="toggleRoiLock()">🔓 枠編集: ON</button>
+          <span class="sec-title" style="margin-bottom:0;">検査ステップ順序 (初期枠＝画面全体)</span>
+          <button class="btn btn-outline" style="padding:3px 8px; font-size:0.74rem;" onclick="resetStepsProgress()">🔄 Step 1へ戻す</button>
         </div>
         
-        <div class="btn-group" style="margin-bottom:4px;">
-          <button class="btn btn-outline" style="flex:1;" onclick="addCenterRoi()">＋ 中央枠追加</button>
-          <button class="btn btn-outline" style="flex:1;" onclick="duplicateActiveRoi()">📋 選択枠を複製</button>
-          <button class="btn btn-danger" onclick="clearAllRois()">全削除</button>
+        <div class="btn-group" style="margin-bottom:6px;">
+          <button class="btn btn-primary" style="flex:1;" onclick="addNewStep('BAKERY')">＋ 🥐 パン屋AIステップ追加</button>
+          <button class="btn btn-qr" style="flex:1;" onclick="addNewStep('BARCODE')">＋ 📷 コード照合ステップ追加</button>
         </div>
         
-        <div class="roi-list-box" id="roiListContainer"></div>
+        <div class="roi-list-box" id="stepListContainer"></div>
 
-        <!-- 微調整コントローラー -->
-        <div class="adjust-panel" id="adjustPanel" style="margin-top:4px;">
-          <div style="font-weight:bold;">🎯 選択枠のサイズ・位置微調整 (10px単位):</div>
-          <div class="adjust-grid">
-            <button class="btn btn-outline" onclick="adjustRoi('w', 10)">幅 ＋</button>
-            <button class="btn btn-outline" onclick="adjustRoi('w', -10)">幅 －</button>
-            <button class="btn btn-outline" onclick="adjustRoi('h', 10)">高 ＋</button>
-            <button class="btn btn-outline" onclick="adjustRoi('h', -10)">高 －</button>
+        <!-- 検査枠サイズ調整パネル（普段は全体100%、絞りたい時だけ調整可能） -->
+        <div class="adjust-panel" id="adjustPanel" style="margin-top:6px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <b>🎯 検査枠の範囲 (初期値＝カメラ画面全体):</b>
+            <button id="btnToggleLock" class="btn btn-outline" style="padding:2px 8px; font-size:0.72rem;" onclick="toggleRoiLock()">🔒 枠変更ロック中</button>
           </div>
-          <div class="adjust-grid">
-            <button class="btn btn-outline" onclick="adjustRoi('x', -10)">← 左</button>
-            <button class="btn btn-outline" onclick="adjustRoi('x', 10)">→ 右</button>
-            <button class="btn btn-outline" onclick="adjustRoi('y', -10)">↑ 上</button>
-            <button class="btn btn-outline" onclick="adjustRoi('y', 10)">↓ 下</button>
+          <div id="roiAdjustControls" style="display:none; flex-direction:column; gap:4px; margin-top:4px;">
+            <button class="btn btn-warning" style="width:100%; padding:5px;" onclick="setStepRoiFullCanvas()">📏 枠をカメラ画面全体(100%)に戻す</button>
+            <div class="adjust-grid">
+              <button class="btn btn-outline" onclick="adjustRoi('w', 15)">幅 ＋</button>
+              <button class="btn btn-outline" onclick="adjustRoi('w', -15)">幅 －</button>
+              <button class="btn btn-outline" onclick="adjustRoi('h', 15)">高 ＋</button>
+              <button class="btn btn-outline" onclick="adjustRoi('h', -15)">高 －</button>
+            </div>
+            <div class="adjust-grid">
+              <button class="btn btn-outline" onclick="adjustRoi('x', -15)">← 左</button>
+              <button class="btn btn-outline" onclick="adjustRoi('x', 15)">→ 右</button>
+              <button class="btn btn-outline" onclick="adjustRoi('y', -15)">↑ 上</button>
+              <button class="btn btn-outline" onclick="adjustRoi('y', 15)">↓ 下</button>
+            </div>
           </div>
         </div>
       </div>
@@ -608,24 +693,30 @@
 
   <!-- NGロック画面 -->
   <div class="lock-overlay" id="ngLockOverlay">
-    <h1 style="font-size:2.5rem;">⚠️ 検査 NG (不合格)</h1>
+    <h1 style="font-size:2.4rem;">⚠️ ステップ検査 NG</h1>
     <div id="ngReasonDetails" style="font-size:1.05rem; max-height:42vh; overflow-y:auto; text-align:left; background:rgba(0,0,0,0.4); padding:14px; border-radius:6px; width:100%; max-width:520px; border:1.5px solid #fca5a5;"></div>
-    <button class="btn btn-outline" style="padding:12px 28px; font-size:1.05rem; background:#ffffff; color:#c62828 !important; border:2px solid #000000;" onclick="unlockNgScreen()">確認して解除 (Enter / Space)</button>
+    <button class="btn btn-outline" style="padding:12px 28px; font-size:1.05rem; background:#ffffff; color:#c62828 !important; border:2px solid #000000;" onclick="unlockNgScreen()">確認して再検査する (Enter / Space)</button>
+  </div>
+
+  <!-- 全ステップ完了（総合合格）オーバーレイ ➔ 自動で品番読取画面へ遷移 -->
+  <div class="complete-overlay" id="completeOverlay">
+    <h1 style="font-size:2.8rem;">🎉 全工程 合格！</h1>
+    <p id="completePartText" style="font-size:1.25rem; font-weight:bold;">品番の全ステップが完了しました</p>
+    <p style="font-size:0.95rem;">自動的に品番読み取り画面へ戻ります...</p>
   </div>
 
   <script>
-    const STORAGE_KEY = 'bakery_qr_profiles_v1';
-    const LOG_KEY = 'bakery_qr_logs_v1';
+    const STORAGE_KEY = 'seq_bakery_qr_profiles_v1';
+    const LOG_KEY = 'seq_bakery_qr_logs_v1';
 
     let currentScreen = 'SELECTOR'; // 'SELECTOR' or 'INSPECTOR'
     let currentPartName = '';
 
-    // 検査カメラ・ハードウェア状態
+    // カメラ・ハードウェア状態
     let isCamRunning = false;
     let camStream = null;
     let torchEnabled = false;
     let voiceEnabled = true;
-    let liveAiEnabled = true;
 
     // AI・OCR・QRインスタンス
     let mobilenetModel = null;
@@ -640,10 +731,10 @@
     let ocrWorker = null;
     let roiQrScanner = null;
 
-    // マルチROI管理
-    let multiRois = [];
-    let activeRoiIndex = 0;
-    let isRoiLocked = false;
+    // 順番ステップ管理（1ステップ＝1検査項目）
+    let stepsList = [];
+    let currentStepIndex = 0;
+    let isRoiLocked = true; // 初期状態はカメラ画面全体でロック（誤タッチ防止）
 
     let statOkCount = 0;
     let statNgCount = 0;
@@ -653,7 +744,7 @@
     let resizeHandle = null;
     let startX = 0, startY = 0, currentX = 0, currentY = 0;
     let initialRoi = null;
-    const HANDLE_RADIUS = 18;
+    const HANDLE_RADIUS = 20;
 
     const canvas = document.getElementById('mainCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -661,7 +752,7 @@
     const cropCanvas = document.createElement('canvas');
     const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
 
-    // --- 1. AIモデルの初期化 ---
+    // --- 1. AIエンジンの初期化 ---
     async function initAI() {
       const startStatus = document.getElementById('lblStartAiStatus');
       let retry = 0;
@@ -686,7 +777,6 @@
       } catch(e){}
     }
 
-    // --- 文字列正規化（全角英数字→半角・空白除去） ---
     function normalizeCodeString(str) {
       if (!str) return '';
       return str.normalize('NFKC').trim();
@@ -702,12 +792,12 @@
       Object.keys(p).forEach(k => {
         const opt = document.createElement('option');
         opt.value = k;
-        opt.textContent = `${k} (枠数: ${(p[k].roisData || []).length})`;
+        const count = (p[k].stepsData || []).length;
+        opt.textContent = `${k} (全 ${count} ステップ)`;
         sel.appendChild(opt);
       });
     }
 
-    // 1-A. QR / バーコードで品番読取
     async function startSelectorBarcodeScan() {
       await stopSelectorCamera();
       const box = document.getElementById('selectorCamBox');
@@ -733,7 +823,6 @@
       });
     }
 
-    // 1-B. 文字(OCR)で品番読取
     async function startSelectorOcrScan() {
       await stopSelectorCamera();
       const box = document.getElementById('selectorCamBox');
@@ -826,7 +915,6 @@
         if (cleaned.length >= 2) {
           document.getElementById('lblOcrDetected').textContent = cleaned;
           const profiles = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-          // 登録済みプロファイルと完全一致したら自動遷移
           if (profiles[cleaned]) {
             beep(1300, 0.12);
             transitionToInspector(cleaned);
@@ -892,7 +980,7 @@
       transitionToInspector(code);
     }
 
-    // --- 画面遷移：品番確定 ➔ 検査画面へ ---
+    // --- 画面遷移：品番確定 ➔ 順番ステップ検査画面へ ---
     async function transitionToInspector(partCode) {
       await stopSelectorCamera();
       currentPartName = partCode;
@@ -903,16 +991,18 @@
       currentScreen = 'INSPECTOR';
 
       loadProfileByName(currentPartName);
-      speakText(`品番 ${currentPartName} の検査画面を開きました`);
 
       if (!isCamRunning) {
         await startInspectorCam();
       }
+      announceCurrentStep();
     }
 
     // --- 検査画面 ➔ 品番読取画面へ戻る ---
     async function returnToSelectorScreen() {
       stopInspectorCam();
+      document.getElementById('completeOverlay').style.display = 'none';
+      document.getElementById('ngLockOverlay').style.display = 'none';
       document.getElementById('screenInspector').style.display = 'none';
       document.getElementById('screenSelector').style.display = 'flex';
       currentScreen = 'SELECTOR';
@@ -921,15 +1011,260 @@
     }
 
     // =========================================================
-    // 【画面2】 パン屋AI ＆ QR照合 マルチ検査ロジック
+    // 【画面2】 順番ステップ検査ロジック (1ステップずつ入れ替え)
     // =========================================================
 
-    // 特徴ベクトルのL2正規化抽出 (MobileNet Embedding)
-    function extractNormalizedEmbedding(roi) {
-      clampRoiToCanvas(roi);
-      cropCanvas.width = roi.w;
-      cropCanvas.height = roi.h;
-      cropCtx.drawImage(video, roi.x, roi.y, roi.w, roi.h, 0, 0, roi.w, roi.h);
+    function syncStepRoiToCanvas(step) {
+      if (!step) return;
+      if (step.isFullFrame) {
+        step.x = 0;
+        step.y = 0;
+        step.w = canvas.width;
+        step.h = canvas.height;
+      } else {
+        step.w = Math.max(40, Math.min(canvas.width, Math.round(step.w)));
+        step.h = Math.max(40, Math.min(canvas.height, Math.round(step.h)));
+        step.x = Math.max(0, Math.min(canvas.width - step.w, Math.round(step.x)));
+        step.y = Math.max(0, Math.min(canvas.height - step.h, Math.round(step.y)));
+      }
+    }
+
+    // 新規ステップ作成（初期枠＝カメラ画面全体 isFullFrame: true）
+    function createStepObject(type = 'BAKERY', customName = '') {
+      const idx = stepsList.length + 1;
+      const defaultName = customName || (type === 'BAKERY' ? `ワーク ${idx}` : `コード照合 ${idx}`);
+      return {
+        id: Date.now() + Math.random(),
+        name: defaultName,
+        type, // 'BAKERY' or 'BARCODE'
+        isFullFrame: true, // ★初期サイズは常にカメラ画像全体
+        x: 0,
+        y: 0,
+        w: canvas.width || 640,
+        h: canvas.height || 480,
+        bakerySamples: [],
+        bakeryThreshold: 80,
+        expectedBarcode: '',
+        passed: false,
+        lastStatus: '待機中'
+      };
+    }
+
+    function addNewStep(type = 'BAKERY') {
+      const step = createStepObject(type);
+      stepsList.push(step);
+      currentStepIndex = stepsList.length - 1;
+      updateStepUI();
+      drawCanvas();
+    }
+
+    function selectStep(idx) {
+      if (idx < 0 || idx >= stepsList.length) return;
+      currentStepIndex = idx;
+      updateStepUI();
+      drawCanvas();
+    }
+
+    // ステップの順番入れ替え（▲ / ▼）
+    function moveStepOrder(idx, dir, e) {
+      if (e) { e.stopPropagation(); e.preventDefault(); }
+      const targetIdx = idx + dir;
+      if (targetIdx < 0 || targetIdx >= stepsList.length) return;
+      const temp = stepsList[idx];
+      stepsList[idx] = stepsList[targetIdx];
+      stepsList[targetIdx] = temp;
+      currentStepIndex = targetIdx;
+      updateStepUI();
+      drawCanvas();
+    }
+
+    function deleteStep(idx, e) {
+      if (e) { e.stopPropagation(); e.preventDefault(); }
+      if (stepsList.length <= 1) return alert('最低1つのステップが必要です');
+      stepsList.splice(idx, 1);
+      if (currentStepIndex >= stepsList.length) currentStepIndex = Math.max(0, stepsList.length - 1);
+      updateStepUI();
+      drawCanvas();
+    }
+
+    function resetStepsProgress() {
+      stepsList.forEach(s => {
+        s.passed = false;
+        s.lastStatus = '待機中';
+      });
+      currentStepIndex = 0;
+      updateStepUI();
+      drawCanvas();
+      announceCurrentStep();
+    }
+
+    function announceCurrentStep() {
+      const cur = stepsList[currentStepIndex];
+      if (!cur) return;
+      const modeName = cur.type === 'BAKERY' ? 'パン屋AI検査' : 'コード照合';
+      speakText(`ステップ ${currentStepIndex + 1}、${cur.name}、${modeName}の準備をしてください`);
+    }
+
+    function updateStepUI() {
+      const total = stepsList.length;
+      const cur = stepsList[currentStepIndex];
+
+      // 1. 上部ナビゲーションバナーと進捗ドット更新
+      const badge = document.getElementById('lblStepBadge');
+      const inst = document.getElementById('lblStepInstruction');
+      const dotsBox = document.getElementById('stepDotsContainer');
+      const execBtn = document.getElementById('btnExecuteStep');
+
+      dotsBox.innerHTML = '';
+      stepsList.forEach((s, i) => {
+        const dot = document.createElement('div');
+        dot.className = `step-dot ${s.passed ? 'done' : ''} ${i === currentStepIndex ? 'current' : ''}`;
+        dotsBox.appendChild(dot);
+      });
+
+      if (cur) {
+        const typeLabel = cur.type === 'BAKERY' ? '🥐 パン屋AI' : '📷 QR/バーコード';
+        badge.textContent = `Step ${currentStepIndex + 1} / ${total}`;
+        inst.textContent = `【 ${cur.name} 】(${typeLabel}) を映して検査ボタンを押してください`;
+        execBtn.textContent = `🔍 Step ${currentStepIndex + 1}/${total} 【${cur.name}】を検査 (Space)`;
+      }
+
+      // 2. ステップ順序リスト更新
+      const container = document.getElementById('stepListContainer');
+      container.innerHTML = '';
+
+      stepsList.forEach((s, idx) => {
+        const div = document.createElement('div');
+        div.className = `roi-item ${idx === currentStepIndex ? 'active' : ''} ${s.passed ? 'passed' : ''}`;
+        div.addEventListener('click', (e) => {
+          if (['SELECT', 'BUTTON', 'INPUT', 'OPTION'].includes(e.target.tagName)) return;
+          selectStep(idx);
+        });
+
+        const detailTxt = s.type === 'BAKERY' 
+          ? `良品:${(s.bakerySamples || []).length}枚 / 基準:${s.bakeryThreshold}%`
+          : `正解:${s.expectedBarcode || currentPartName || '現在品番'}`;
+        const statusMark = s.passed ? '✅OK済' : '⏳未';
+
+        div.innerHTML = `
+          <div style="display:flex; align-items:center; gap:4px; flex:1; min-width:140px;">
+            <span style="background:#1e293b; color:#fff !important; font-size:0.72rem; padding:2px 6px; border-radius:4px; font-weight:bold;">
+              Step ${idx + 1}
+            </span>
+            <input type="text" value="${s.name}" style="width:105px; padding:3px 6px; font-size:0.78rem;" 
+              onchange="renameStep(${idx}, this.value)" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();">
+            <span style="font-size:0.72rem; font-weight:bold; color:${s.passed ? '#15803d' : '#64748b'};">${statusMark}</span>
+          </div>
+          <div style="display:flex; gap:3px; align-items:center; flex-wrap:wrap;">
+            <span style="font-size:0.68rem; color:#475569; margin-right:2px;">${detailTxt}</span>
+            <select class="roi-type-select" onchange="changeStepType(${idx}, this.value, event)" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();">
+              <option value="BAKERY" ${s.type === 'BAKERY' ? 'selected' : ''}>🥐 パン屋AI</option>
+              <option value="BARCODE" ${s.type === 'BARCODE' ? 'selected' : ''}>📷 コード照合</option>
+            </select>
+            <button class="btn btn-outline" style="padding:4px 7px; font-size:0.75rem;" onclick="moveStepOrder(${idx}, -1, event)" ontouchstart="event.stopPropagation();">▲</button>
+            <button class="btn btn-outline" style="padding:4px 7px; font-size:0.75rem;" onclick="moveStepOrder(${idx}, 1, event)" ontouchstart="event.stopPropagation();">▼</button>
+            <button class="btn btn-danger" style="padding:4px 8px; font-size:0.75rem;" onclick="deleteStep(${idx}, event)" ontouchstart="event.stopPropagation();">×</button>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+
+      // 3. 選択中ステップの設定カード切替
+      const cardBakery = document.getElementById('cardBakery');
+      const cardBarcode = document.getElementById('cardBarcode');
+
+      if (cur) {
+        if (cur.type === 'BAKERY') {
+          cardBakery.style.display = 'flex';
+          cardBarcode.style.display = 'none';
+          document.getElementById('lblActiveStepBakery').textContent = `Step ${currentStepIndex + 1}: ${cur.name}`;
+          document.getElementById('countBakery').textContent = (cur.bakerySamples || []).length;
+          document.getElementById('numBakeryThreshold').value = cur.bakeryThreshold || 80;
+        } else {
+          cardBakery.style.display = 'none';
+          cardBarcode.style.display = 'flex';
+          document.getElementById('lblActiveStepBarcode').textContent = `Step ${currentStepIndex + 1}: ${cur.name}`;
+          document.getElementById('txtExpectedBarcode').value = cur.expectedBarcode || '';
+        }
+      }
+    }
+
+    function renameStep(idx, newName) {
+      if (stepsList[idx] && newName.trim()) {
+        stepsList[idx].name = newName.trim();
+        updateStepUI();
+        drawCanvas();
+      }
+    }
+
+    function changeStepType(idx, newType, e) {
+      if (e) e.stopPropagation();
+      stepsList[idx].type = newType;
+      stepsList[idx].lastStatus = '待機中';
+      currentStepIndex = idx;
+      updateStepUI();
+      drawCanvas();
+    }
+
+    function updateActiveStepThreshold(val) {
+      const cur = stepsList[currentStepIndex];
+      if (cur) {
+        cur.bakeryThreshold = Math.max(1, Math.min(100, parseInt(val, 10) || 80));
+        updateStepUI();
+      }
+    }
+
+    function updateActiveStepExpectedCode(val) {
+      const cur = stepsList[currentStepIndex];
+      if (cur) {
+        cur.expectedBarcode = normalizeCodeString(val);
+        updateStepUI();
+      }
+    }
+
+    // --- 枠サイズの全体リセット・微調整 ---
+    function toggleRoiLock() {
+      isRoiLocked = !isRoiLocked;
+      const btn = document.getElementById('btnToggleLock');
+      const ctrl = document.getElementById('roiAdjustControls');
+      if (isRoiLocked) {
+        btn.textContent = '🔒 枠変更ロック中';
+        btn.className = 'btn btn-outline';
+        ctrl.style.display = 'none';
+      } else {
+        btn.textContent = '🔓 枠サイズ変更: ON';
+        btn.className = 'btn btn-warning';
+        ctrl.style.display = 'flex';
+      }
+      drawCanvas();
+    }
+
+    function setStepRoiFullCanvas() {
+      const cur = stepsList[currentStepIndex];
+      if (!cur) return;
+      cur.isFullFrame = true;
+      syncStepRoiToCanvas(cur);
+      drawCanvas();
+    }
+
+    function adjustRoi(param, val) {
+      const cur = stepsList[currentStepIndex];
+      if (!cur || isRoiLocked) return;
+      cur.isFullFrame = false;
+      if (param === 'w') cur.w += val;
+      if (param === 'h') cur.h += val;
+      if (param === 'x') cur.x += val;
+      if (param === 'y') cur.y += val;
+      syncStepRoiToCanvas(cur);
+      drawCanvas();
+    }
+
+    // --- パン屋AI特徴抽出 & コサイン類似度計算 ---
+    function extractNormalizedEmbedding(step) {
+      syncStepRoiToCanvas(step);
+      cropCanvas.width = step.w;
+      cropCanvas.height = step.h;
+      cropCtx.drawImage(video, step.x, step.y, step.w, step.h, 0, 0, step.w, step.h);
 
       return tf.tidy(() => {
         const imgTensor = tf.browser.fromPixels(cropCanvas);
@@ -940,7 +1275,6 @@
       });
     }
 
-    // コサイン類似度計算 (登録された複数枚の良品マスターとの最大一致率 0〜100%)
     function calcBakerySimilarity(vec, samples) {
       if (!samples || samples.length === 0) return 0;
       let maxSim = -1.0;
@@ -948,27 +1282,24 @@
         const master = samples[s];
         let dot = 0;
         const len = Math.min(vec.length, master.length);
-        for (let i = 0; i < len; i++) {
-          dot += vec[i] * master[i];
-        }
+        for (let i = 0; i < len; i++) dot += vec[i] * master[i];
         if (dot > maxSim) maxSim = dot;
       }
       return Math.round(Math.max(0, Math.min(1, maxSim)) * 100);
     }
 
-    // 枠内からQR/バーコードを切り抜いてデコード (余白パディング付きで高認識率)
-    async function decodeBarcodeFromRoi(roi) {
-      clampRoiToCanvas(roi);
+    // --- 枠内QR/バーコード読取 ---
+    async function decodeBarcodeFromStep(step) {
+      syncStepRoiToCanvas(step);
       const pad = 24;
       const tempCanvas = document.createElement('canvas');
-      tempCanvas.width = roi.w + pad * 2;
-      tempCanvas.height = roi.h + pad * 2;
+      tempCanvas.width = step.w + pad * 2;
+      tempCanvas.height = step.h + pad * 2;
       const tCtx = tempCanvas.getContext('2d');
       tCtx.fillStyle = '#ffffff';
       tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-      tCtx.drawImage(video, roi.x, roi.y, roi.w, roi.h, pad, pad, roi.w, roi.h);
+      tCtx.drawImage(video, step.x, step.y, step.w, step.h, pad, pad, step.w, step.h);
 
-      // 1. ブラウザネイティブ BarcodeDetector が使える場合は最優先で試行
       if ('BarcodeDetector' in window) {
         try {
           const detector = new BarcodeDetector();
@@ -979,14 +1310,13 @@
         } catch(e){}
       }
 
-      // 2. Html5Qrcode.scanFile でデコード
       if (!roiQrScanner) {
         roiQrScanner = new Html5Qrcode("hiddenRoiQrReader");
       }
       return new Promise((resolve) => {
         tempCanvas.toBlob(async (blob) => {
           if (!blob) return resolve(null);
-          const file = new File([blob], "roi_scan.png", { type: "image/png" });
+          const file = new File([blob], "step_scan.png", { type: "image/png" });
           try {
             const decoded = await roiQrScanner.scanFile(file, false);
             resolve(normalizeCodeString(decoded));
@@ -997,223 +1327,33 @@
       });
     }
 
-    // --- ROI枠の生成・編集 ---
-    function clampRoiToCanvas(r) {
-      r.w = Math.max(35, Math.min(canvas.width, Math.round(r.w)));
-      r.h = Math.max(35, Math.min(canvas.height, Math.round(r.h)));
-      r.x = Math.max(0, Math.min(canvas.width - r.w, Math.round(r.x)));
-      r.y = Math.max(0, Math.min(canvas.height - r.h, Math.round(r.y)));
-    }
-
-    function createNewRoi(x, y, w, h, type = 'BAKERY') {
-      const roi = {
-        id: Date.now() + Math.random(),
-        name: `枠 ${multiRois.length + 1}`,
-        x: Math.round(x), y: Math.round(y), w: Math.round(w), h: Math.round(h),
-        type, // 'BAKERY' or 'BARCODE'
-        bakerySamples: [],
-        bakeryThreshold: 80,
-        expectedBarcode: '',
-        lastStatus: '待機'
-      };
-      clampRoiToCanvas(roi);
-      return roi;
-    }
-
-    function addRoi(x, y, w, h, type = 'BAKERY') {
-      const roi = createNewRoi(x, y, w, h, type);
-      multiRois.push(roi);
-      activeRoiIndex = multiRois.length - 1;
-      updateRoiListUI();
-      drawCanvas();
-    }
-
-    function addCenterRoi() {
-      const w = Math.round(canvas.width * 0.35);
-      const h = Math.round(canvas.height * 0.35);
-      const x = Math.round((canvas.width - w) / 2);
-      const y = Math.round((canvas.height - h) / 2);
-      addRoi(x, y, w, h, 'BAKERY');
-    }
-
-    function duplicateActiveRoi() {
-      const src = multiRois[activeRoiIndex];
-      if (!src) return alert('複製元の枠を選択してください');
-      const newRoi = createNewRoi(src.x + 25, src.y + 25, src.w, src.h, src.type);
-      newRoi.bakeryThreshold = src.bakeryThreshold;
-      newRoi.expectedBarcode = src.expectedBarcode;
-      multiRois.push(newRoi);
-      activeRoiIndex = multiRois.length - 1;
-      updateRoiListUI();
-      drawCanvas();
-    }
-
-    function selectActiveRoi(idx) {
-      activeRoiIndex = idx;
-      updateRoiListUI();
-      drawCanvas();
-    }
-
-    function deleteRoi(idx, e) {
-      if (e) { e.stopPropagation(); e.preventDefault(); }
-      multiRois.splice(idx, 1);
-      if (activeRoiIndex >= multiRois.length) activeRoiIndex = Math.max(0, multiRois.length - 1);
-      updateRoiListUI();
-      drawCanvas();
-    }
-
-    function clearAllRois() {
-      multiRois = [];
-      activeRoiIndex = 0;
-      updateRoiListUI();
-      drawCanvas();
-    }
-
-    function toggleRoiLock() {
-      isRoiLocked = !isRoiLocked;
-      const btn = document.getElementById('btnToggleLock');
-      const panel = document.getElementById('adjustPanel');
-      if (isRoiLocked) {
-        btn.textContent = '🔒 枠固定: ON';
-        btn.className = 'btn btn-dark';
-        panel.style.opacity = '0.4';
-        panel.style.pointerEvents = 'none';
-      } else {
-        btn.textContent = '🔓 枠編集: ON';
-        btn.className = 'btn btn-warning';
-        panel.style.opacity = '1';
-        panel.style.pointerEvents = 'auto';
-      }
-      drawCanvas();
-    }
-
-    function adjustRoi(param, val) {
-      const r = multiRois[activeRoiIndex];
-      if (!r || isRoiLocked) return;
-      if (param === 'w') r.w += val;
-      if (param === 'h') r.h += val;
-      if (param === 'x') r.x += val;
-      if (param === 'y') r.y += val;
-      clampRoiToCanvas(r);
-      drawCanvas();
-    }
-
-    function updateRoiListUI() {
-      const container = document.getElementById('roiListContainer');
-      container.innerHTML = '';
-
-      multiRois.forEach((r, idx) => {
-        const div = document.createElement('div');
-        div.className = `roi-item ${idx === activeRoiIndex ? 'active' : ''}`;
-        div.addEventListener('click', (e) => {
-          if (e.target.tagName !== 'SELECT' && e.target.tagName !== 'BUTTON' && e.target.tagName !== 'OPTION') {
-            selectActiveRoi(idx);
-          }
-        });
-
-        const detailTxt = r.type === 'BAKERY' 
-          ? `マスター:${(r.bakerySamples || []).length}枚 (合格:${r.bakeryThreshold}%)`
-          : `正解:${r.expectedBarcode || currentPartName || '現在品番'}`;
-
-        div.innerHTML = `
-          <div style="flex:1; min-width:0; pointer-events:none;">
-            <div style="font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.name}</div>
-            <div style="font-size:0.7rem; color:#475569; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${detailTxt}</div>
-          </div>
-          <div style="display:flex; gap:4px; align-items:center; flex-shrink:0;">
-            <select class="roi-type-select" onchange="changeRoiType(${idx}, this.value, event)" onclick="event.stopPropagation();" ontouchstart="event.stopPropagation();">
-              <option value="BAKERY" ${r.type === 'BAKERY' ? 'selected' : ''}>🥐 パン屋AI照合</option>
-              <option value="BARCODE" ${r.type === 'BARCODE' ? 'selected' : ''}>📷 QR/バーコード</option>
-            </select>
-            <button class="btn btn-danger" style="padding:5px 9px; font-size:0.78rem;" onclick="deleteRoi(${idx}, event)" ontouchstart="event.stopPropagation();">×</button>
-          </div>
-        `;
-        container.appendChild(div);
-      });
-
-      const ar = multiRois[activeRoiIndex];
-      const cardBakery = document.getElementById('cardBakery');
-      const cardBarcode = document.getElementById('cardBarcode');
-
-      if (ar) {
-        if (ar.type === 'BAKERY') {
-          cardBakery.style.display = 'flex';
-          cardBarcode.style.display = 'none';
-          document.getElementById('lblActiveRoiBakery').textContent = `${ar.name} (パン屋AI)`;
-          document.getElementById('countBakery').textContent = (ar.bakerySamples || []).length;
-          document.getElementById('numBakeryThreshold').value = ar.bakeryThreshold || 80;
-        } else {
-          cardBakery.style.display = 'none';
-          cardBarcode.style.display = 'flex';
-          document.getElementById('lblActiveRoiBarcode').textContent = `${ar.name} (QR/バーコード)`;
-          document.getElementById('txtExpectedBarcode').value = ar.expectedBarcode || '';
-        }
-      } else {
-        cardBakery.style.display = 'flex';
-        cardBarcode.style.display = 'none';
-        document.getElementById('lblActiveRoiBakery').textContent = '枠なし';
-      }
-    }
-
-    function changeRoiType(idx, newType, e) {
-      if (e) e.stopPropagation();
-      multiRois[idx].type = newType;
-      multiRois[idx].lastStatus = '待機';
-      activeRoiIndex = idx;
-      updateRoiListUI();
-      drawCanvas();
-    }
-
-    function updateActiveRoiThreshold(val) {
-      const ar = multiRois[activeRoiIndex];
-      if (ar) {
-        ar.bakeryThreshold = Math.max(1, Math.min(100, parseInt(val, 10) || 80));
-        updateRoiListUI();
-      }
-    }
-
-    function updateActiveRoiExpectedCode(val) {
-      const ar = multiRois[activeRoiIndex];
-      if (ar) {
-        ar.expectedBarcode = normalizeCodeString(val);
-        updateRoiListUI();
-      }
-    }
-
     async function captureBarcodeToExpected() {
       if (!isCamRunning) return alert('カメラを起動してください');
-      const ar = multiRois[activeRoiIndex];
-      if (!ar || ar.type !== 'BARCODE') return;
+      const cur = stepsList[currentStepIndex];
+      if (!cur || cur.type !== 'BARCODE') return;
 
-      document.getElementById('aiLiveBadge').textContent = '枠内のコードを読み取り中...';
-      const code = await decodeBarcodeFromRoi(ar);
+      document.getElementById('aiLiveBadge').textContent = 'コードを読み取り中...';
+      const code = await decodeBarcodeFromStep(cur);
       if (code) {
-        ar.expectedBarcode = code;
+        cur.expectedBarcode = code;
         document.getElementById('txtExpectedBarcode').value = code;
-        ar.lastStatus = `読取:${code}`;
+        cur.lastStatus = `正解登録:${code}`;
         beep(1300, 0.1);
-        updateRoiListUI();
+        updateStepUI();
         drawCanvas();
-        alert(`枠内のコード [${code}] を正解コードとして登録しました`);
+        alert(`コード [${code}] をこのステップの正解として登録しました`);
       } else {
         beep(350, 0.25, 'square');
-        alert('枠内からQR/バーコードを読み取れませんでした。枠をコードより少し大きめに囲んでください。');
+        alert('コードを読み取れませんでした。ピントや明るさを確認してください。');
       }
     }
 
-    function toggleLiveAi() {
-      liveAiEnabled = !liveAiEnabled;
-      const btn = document.getElementById('btnLiveAiToggle');
-      btn.textContent = liveAiEnabled ? '⚡ ライブ類似度表示: ON' : '⚡ ライブ類似度表示: OFF(軽量)';
-      btn.className = liveAiEnabled ? 'btn btn-outline' : 'btn btn-dark';
-    }
-
-    // --- パン屋AIマスター登録処理 ---
+    // --- パン屋AIマスター登録 ---
     function startBakeryRegister(e) {
       if (e && e.cancelable) e.preventDefault();
       if (!isCamRunning) return alert('カメラを起動してください');
-      const r = multiRois[activeRoiIndex];
-      if (!r || r.type !== 'BAKERY') return;
+      const cur = stepsList[currentStepIndex];
+      if (!cur || cur.type !== 'BAKERY') return;
       if (bakeryInterval) clearInterval(bakeryInterval);
       registerOneBakerySample();
       bakeryInterval = setInterval(registerOneBakerySample, 250);
@@ -1224,29 +1364,29 @@
     }
 
     function registerOneBakerySample() {
-      const r = multiRois[activeRoiIndex];
-      if (!mobilenetModel || !r || !isCamRunning || r.type !== 'BAKERY') return;
-      if (!r.bakerySamples) r.bakerySamples = [];
-      if (r.bakerySamples.length >= 40) {
+      const cur = stepsList[currentStepIndex];
+      if (!mobilenetModel || !cur || !isCamRunning || cur.type !== 'BAKERY') return;
+      if (!cur.bakerySamples) cur.bakerySamples = [];
+      if (cur.bakerySamples.length >= 40) {
         stopBakeryRegister();
-        return alert('1枠につき最大40枚まで登録可能です');
+        return alert('1ステップにつき最大40枚まで登録可能です');
       }
-      const emb = extractNormalizedEmbedding(r);
-      r.bakerySamples.push(emb);
-      updateRoiListUI();
+      const emb = extractNormalizedEmbedding(cur);
+      cur.bakerySamples.push(emb);
+      updateStepUI();
       beep(1400, 0.05);
     }
 
     function clearBakerySamples() {
-      const r = multiRois[activeRoiIndex];
-      if (!r) return;
-      r.bakerySamples = [];
-      r.lastStatus = '未登録';
-      updateRoiListUI();
+      const cur = stepsList[currentStepIndex];
+      if (!cur) return;
+      cur.bakerySamples = [];
+      cur.lastStatus = '未登録';
+      updateStepUI();
       drawCanvas();
     }
 
-    // --- 検査用カメラ制御 ---
+    // --- 検査カメラ制御 ---
     async function startInspectorCam() {
       const btn = document.getElementById('btnCam');
       try {
@@ -1257,10 +1397,9 @@
         await video.play();
         canvas.width = video.videoWidth || 640;
         canvas.height = video.videoHeight || 480;
-        multiRois.forEach(r => clampRoiToCanvas(r));
+        stepsList.forEach(s => syncStepRoiToCanvas(s));
         isCamRunning = true;
-        btn.textContent = '⏹ カメラ停止';
-        document.getElementById('aiLiveBadge').textContent = `品番 [${currentPartName}] 検査待機中`;
+        btn.textContent = '⏹ 停止';
         requestAnimationFrame(renderLoop);
       } catch(err) {
         alert('カメラ起動エラー: ' + err.message);
@@ -1274,7 +1413,7 @@
       }
       video.pause();
       isCamRunning = false;
-      document.getElementById('btnCam').textContent = '📷 カメラ起動';
+      document.getElementById('btnCam').textContent = '📷 起動';
     }
 
     async function toggleInspectorCam() {
@@ -1295,30 +1434,36 @@
       } catch(e) { alert('ライト切替失敗'); }
     }
 
-    // --- 描画＆ライブ推論ループ ---
+    // --- 現在のステップの描画 ＆ ライブAI類似度プレビュー ---
     function renderLoop(timestamp) {
       if (!isCamRunning || currentScreen !== 'INSPECTOR') return;
       drawCanvas();
 
-      if (liveAiEnabled && !isLiveInferring && (timestamp - lastLiveInferTime > 320)) {
+      if (!isLiveInferring && (timestamp - lastLiveInferTime > 320)) {
         lastLiveInferTime = timestamp;
-        runLiveBakeryPreview();
+        runLiveStepPreview();
       }
       requestAnimationFrame(renderLoop);
     }
 
-    async function runLiveBakeryPreview() {
+    async function runLiveStepPreview() {
       if (!isCamRunning) return;
+      const cur = stepsList[currentStepIndex];
+      if (!cur) return;
+
       isLiveInferring = true;
       try {
-        for (let i = 0; i < multiRois.length; i++) {
-          const r = multiRois[i];
-          if (r.type === 'BAKERY' && mobilenetModel && r.bakerySamples && r.bakerySamples.length > 0) {
-            const vec = extractNormalizedEmbedding(r);
-            const sim = calcBakerySimilarity(vec, r.bakerySamples);
-            const ok = sim >= (r.bakeryThreshold || 80);
-            r.lastStatus = `${ok ? 'OK' : 'NG'}(${sim}%)`;
-          }
+        if (cur.type === 'BAKERY' && mobilenetModel && cur.bakerySamples && cur.bakerySamples.length > 0) {
+          const vec = extractNormalizedEmbedding(cur);
+          const sim = calcBakerySimilarity(vec, cur.bakerySamples);
+          const ok = sim >= (cur.bakeryThreshold || 80);
+          cur.lastStatus = `類似度:${sim}% (${ok ? 'OK圏内' : '不足'})`;
+          document.getElementById('aiLiveBadge').textContent = `Step ${currentStepIndex + 1} [${cur.name}] リアルタイム類似度: ${sim}%`;
+        } else if (cur.type === 'BAKERY') {
+          document.getElementById('aiLiveBadge').textContent = `Step ${currentStepIndex + 1} [${cur.name}]: 良品マスターを登録してください`;
+        } else {
+          const exp = cur.expectedBarcode || currentPartName;
+          document.getElementById('aiLiveBadge').textContent = `Step ${currentStepIndex + 1} [${cur.name}]: コードをかざして検査ボタンを押してください (正解:${exp})`;
         }
       } catch(e) {
       } finally {
@@ -1332,46 +1477,53 @@
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
       }
 
-      multiRois.forEach((r, idx) => {
-        const isActive = idx === activeRoiIndex;
-        const strokeCol = isActive ? '#fde047' : (r.type === 'BAKERY' ? '#c084fc' : '#22d3ee');
-        ctx.strokeStyle = strokeCol;
-        ctx.lineWidth = isActive ? 3.5 : 2.5;
-        ctx.strokeRect(r.x, r.y, r.w, r.h);
+      const cur = stepsList[currentStepIndex];
+      if (!cur) return;
 
-        ctx.fillStyle = isActive ? 'rgba(253, 224, 71, 0.12)' : 'rgba(0, 0, 0, 0.1)';
-        ctx.fillRect(r.x, r.y, r.w, r.h);
+      syncStepRoiToCanvas(cur);
 
-        const tag = r.type === 'BAKERY' ? '🥐パン屋' : '📷コード';
-        const labelText = `${r.name}[${tag}]: ${r.lastStatus}`;
-        ctx.font = 'bold 13px sans-serif';
-        const textWidth = ctx.measureText(labelText).width;
-        const boxW = Math.min(canvas.width, textWidth + 14);
-        const boxH = 22;
+      // 現在のステップの検査枠のみを描画（全体枠のときは画面内側に太枠を表示）
+      const strokeCol = cur.type === 'BAKERY' ? '#facc15' : '#22d3ee';
+      const pad = cur.isFullFrame ? 6 : 0;
+      const rx = cur.x + pad;
+      const ry = cur.y + pad;
+      const rw = cur.w - pad * 2;
+      const rh = cur.h - pad * 2;
 
-        const labelX = Math.max(0, Math.min(canvas.width - boxW, r.x));
-        const labelY = (r.y >= boxH + 2) ? (r.y - boxH) : r.y;
+      ctx.strokeStyle = strokeCol;
+      ctx.lineWidth = 4;
+      ctx.strokeRect(rx, ry, rw, rh);
 
-        ctx.fillStyle = isActive ? '#0f172a' : 'rgba(15, 23, 42, 0.9)';
-        ctx.fillRect(labelX, labelY, boxW, boxH);
-        ctx.strokeStyle = strokeCol;
-        ctx.lineWidth = 1;
-        ctx.strokeRect(labelX, labelY, boxW, boxH);
+      // ラベル表示（画面下部に見やすく配置）
+      const tag = cur.type === 'BAKERY' ? '🥐パン屋AI' : '📷コード照合';
+      const rangeTxt = cur.isFullFrame ? '全体枠' : 'カスタム枠';
+      const labelText = `Step ${currentStepIndex + 1}/${stepsList.length} 【${cur.name}】(${tag}/${rangeTxt}): ${cur.lastStatus}`;
+      ctx.font = 'bold 14px sans-serif';
+      const textWidth = ctx.measureText(labelText).width;
+      const boxW = Math.min(canvas.width - 16, textWidth + 16);
+      const boxH = 26;
+      const labelX = 8;
+      const labelY = canvas.height - boxH - 8;
 
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(labelText, labelX + 6, labelY + 15);
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+      ctx.fillRect(labelX, labelY, boxW, boxH);
+      ctx.strokeStyle = strokeCol;
+      ctx.lineWidth = 1.5;
+      ctx.strokeRect(labelX, labelY, boxW, boxH);
 
-        if (isActive && !isRoiLocked) {
-          drawHandle(r.x, r.y);
-          drawHandle(r.x + r.w, r.y);
-          drawHandle(r.x, r.y + r.h);
-          drawHandle(r.x + r.w, r.y + r.h);
-        }
-      });
+      ctx.fillStyle = '#ffffff';
+      ctx.fillText(labelText, labelX + 8, labelY + 18);
+
+      if (!isRoiLocked) {
+        drawHandle(rx, ry);
+        drawHandle(rx + rw, ry);
+        drawHandle(rx, ry + rh);
+        drawHandle(rx + rw, ry + rh);
+      }
 
       if (dragMode === 'NEW') {
         ctx.strokeStyle = '#4ade80';
-        ctx.lineWidth = 2.5;
+        ctx.lineWidth = 3;
         ctx.strokeRect(startX, startY, currentX - startX, currentY - startY);
       }
     }
@@ -1379,14 +1531,14 @@
     function drawHandle(x, y) {
       ctx.fillStyle = '#f97316';
       ctx.beginPath();
-      ctx.arc(x, y, 7, 0, Math.PI * 2);
+      ctx.arc(x, y, 8, 0, Math.PI * 2);
       ctx.fill();
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 2;
       ctx.stroke();
     }
 
-    // --- タッチ＆マウスによる枠操作 ---
+    // --- 枠ロック解除時のドラッグ・リサイズ操作 ---
     function getCanvasCoords(e) {
       const rect = canvas.getBoundingClientRect();
       const clientX = (e.touches && e.touches.length > 0) ? e.touches[0].clientX : e.clientX;
@@ -1406,11 +1558,8 @@
       return null;
     }
 
-    function isInsideRoi(pos, roi) {
-      return pos.x >= roi.x && pos.x <= roi.x + roi.w && pos.y >= roi.y && pos.y <= roi.y + roi.h;
-    }
-
     function handlePointerStart(e) {
+      if (isRoiLocked) return;
       if (e.touches && e.touches.length > 1) return;
       if (e.cancelable) e.preventDefault();
 
@@ -1418,31 +1567,15 @@
       startX = pos.x; startY = pos.y;
       currentX = pos.x; currentY = pos.y;
 
-      if (isRoiLocked) return;
+      const cur = stepsList[currentStepIndex];
+      if (!cur) return;
 
-      const activeRoi = multiRois[activeRoiIndex];
-      if (activeRoi) {
-        const handle = getHandleAt(pos, activeRoi);
-        if (handle) {
-          dragMode = 'RESIZE';
-          resizeHandle = handle;
-          initialRoi = { ...activeRoi };
-          return;
-        }
-      }
-
-      let clickedRoiIdx = -1;
-      for (let i = multiRois.length - 1; i >= 0; i--) {
-        if (isInsideRoi(pos, multiRois[i])) {
-          clickedRoiIdx = i;
-          break;
-        }
-      }
-
-      if (clickedRoiIdx !== -1) {
-        selectActiveRoi(clickedRoiIdx);
-        dragMode = 'MOVE';
-        initialRoi = { ...multiRois[clickedRoiIdx] };
+      const handle = getHandleAt(pos, cur);
+      if (handle) {
+        cur.isFullFrame = false;
+        dragMode = 'RESIZE';
+        resizeHandle = handle;
+        initialRoi = { ...cur };
         return;
       }
 
@@ -1458,47 +1591,44 @@
       const dx = pos.x - startX;
       const dy = pos.y - startY;
 
-      const activeRoi = multiRois[activeRoiIndex];
-
-      if (dragMode === 'MOVE' && activeRoi && initialRoi) {
-        activeRoi.x = initialRoi.x + dx;
-        activeRoi.y = initialRoi.y + dy;
-        clampRoiToCanvas(activeRoi);
-      } else if (dragMode === 'RESIZE' && activeRoi && initialRoi) {
+      const cur = stepsList[currentStepIndex];
+      if (dragMode === 'RESIZE' && cur && initialRoi) {
         if (resizeHandle === 'BR') {
-          activeRoi.w = initialRoi.w + dx;
-          activeRoi.h = initialRoi.h + dy;
+          cur.w = initialRoi.w + dx;
+          cur.h = initialRoi.h + dy;
         } else if (resizeHandle === 'BL') {
-          const newW = Math.max(35, initialRoi.w - dx);
-          activeRoi.x = initialRoi.x + (initialRoi.w - newW);
-          activeRoi.w = newW;
-          activeRoi.h = initialRoi.h + dy;
+          const newW = Math.max(40, initialRoi.w - dx);
+          cur.x = initialRoi.x + (initialRoi.w - newW);
+          cur.w = newW;
+          cur.h = initialRoi.h + dy;
         } else if (resizeHandle === 'TR') {
-          activeRoi.w = initialRoi.w + dx;
-          const newH = Math.max(35, initialRoi.h - dy);
-          activeRoi.y = initialRoi.y + (initialRoi.h - newH);
-          activeRoi.h = newH;
+          cur.w = initialRoi.w + dx;
+          const newH = Math.max(40, initialRoi.h - dy);
+          cur.y = initialRoi.y + (initialRoi.h - newH);
+          cur.h = newH;
         } else if (resizeHandle === 'TL') {
-          const newW = Math.max(35, initialRoi.w - dx);
-          const newH = Math.max(35, initialRoi.h - dy);
-          activeRoi.x = initialRoi.x + (initialRoi.w - newW);
-          activeRoi.y = initialRoi.y + (initialRoi.h - newH);
-          activeRoi.w = newW;
-          activeRoi.h = newH;
+          const newW = Math.max(40, initialRoi.w - dx);
+          const newH = Math.max(40, initialRoi.h - dy);
+          cur.x = initialRoi.x + (initialRoi.w - newW);
+          cur.y = initialRoi.y + (initialRoi.h - newH);
+          cur.w = newW;
+          cur.h = newH;
         }
-        clampRoiToCanvas(activeRoi);
+        syncStepRoiToCanvas(cur);
       }
-
       drawCanvas();
     }
 
     function handlePointerEnd() {
       if (!dragMode) return;
-      if (dragMode === 'NEW') {
+      const cur = stepsList[currentStepIndex];
+      if (dragMode === 'NEW' && cur) {
         const x = Math.min(startX, currentX), y = Math.min(startY, currentY);
         const w = Math.abs(currentX - startX), h = Math.abs(currentY - startY);
-        if (w > 35 && h > 35) {
-          addRoi(x, y, w, h, 'BAKERY');
+        if (w > 45 && h > 45) {
+          cur.isFullFrame = false;
+          cur.x = x; cur.y = y; cur.w = w; cur.h = h;
+          syncStepRoiToCanvas(cur);
         }
       }
       dragMode = null;
@@ -1514,67 +1644,102 @@
     canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
     canvas.addEventListener('touchend', handlePointerEnd);
 
-    // --- 一括検査実行 (パン屋AI ＆ QR/バーコード照合) ---
-    async function executeInspection() {
+    // =========================================================
+    // ★ 1ステップずつボタンタップで検査 ➔ 自動進行 ➔ 完了後品番画面へ戻る ★
+    // =========================================================
+    async function executeCurrentStepInspection() {
       if (!isCamRunning) return alert('カメラを起動してください');
-      if (multiRois.length === 0) return alert('検査枠を設定してください');
+      const cur = stepsList[currentStepIndex];
+      if (!cur) return;
 
-      document.getElementById('aiLiveBadge').textContent = '🔍 全枠検査実行中...';
-      let allPass = true;
-      let ngReasons = [];
-      let ngFrameNames = [];
+      const stepNum = currentStepIndex + 1;
+      const totalSteps = stepsList.length;
 
-      for (let i = 0; i < multiRois.length; i++) {
-        const r = multiRois[i];
-        if (r.type === 'BAKERY') {
-          if (!r.bakerySamples || r.bakerySamples.length === 0) {
-            allPass = false;
-            ngReasons.push(`❌ <b>${r.name}[パン屋AI]</b>: 良品マスターが未登録です`);
-            ngFrameNames.push(r.name);
-            continue;
-          }
-          const vec = extractNormalizedEmbedding(r);
-          const sim = calcBakerySimilarity(vec, r.bakerySamples);
-          const th = r.bakeryThreshold || 80;
-          r.lastStatus = `${sim >= th ? 'OK' : 'NG'}(${sim}%)`;
+      if (cur.type === 'BAKERY') {
+        if (!cur.bakerySamples || cur.bakerySamples.length === 0) {
+          return alert(`Step ${stepNum} 【${cur.name}】の良品マスターが未登録です。\n先に「📸 良品マスター追加」を押して登録してください。`);
+        }
+        const vec = extractNormalizedEmbedding(cur);
+        const sim = calcBakerySimilarity(vec, cur.bakerySamples);
+        const th = cur.bakeryThreshold || 80;
 
-          if (sim < th) {
-            allPass = false;
-            ngReasons.push(`❌ <b>${r.name}[パン屋AI]</b>: 類似度不足 (一致率:${sim}% / 基準:${th}%)`);
-            ngFrameNames.push(r.name);
-          }
-        } else if (r.type === 'BARCODE') {
-          const expected = r.expectedBarcode || currentPartName;
-          const scanned = await decodeBarcodeFromRoi(r);
+        if (sim >= th) {
+          cur.passed = true;
+          cur.lastStatus = `OK(${sim}%)`;
+          handleStepPass(stepNum, totalSteps, `${cur.name}[パン屋AI]: 合格 (${sim}%)`);
+        } else {
+          cur.passed = false;
+          cur.lastStatus = `NG(${sim}%)`;
+          handleStepFail(stepNum, `❌ <b>Step ${stepNum} 【${cur.name}】(パン屋AI照合)</b><br>類似度が基準に達していません (一致率: <b>${sim}%</b> / 合格基準: ${th}%)`);
+        }
+      } else if (cur.type === 'BARCODE') {
+        document.getElementById('aiLiveBadge').textContent = `Step ${stepNum}: QR/バーコード読取中...`;
+        const expected = cur.expectedBarcode || currentPartName;
+        const scanned = await decodeBarcodeFromStep(cur);
 
-          if (!scanned) {
-            allPass = false;
-            r.lastStatus = 'NG(未検出)';
-            ngReasons.push(`❌ <b>${r.name}[コード照合]</b>: QR/バーコードが読み取れません (正解:${expected})`);
-            ngFrameNames.push(r.name);
-          } else if (scanned !== expected) {
-            allPass = false;
-            r.lastStatus = `NG(${scanned})`;
-            ngReasons.push(`❌ <b>${r.name}[コード照合]</b>: コード不一致 (読取:${scanned} ≠ 正解:${expected})`);
-            ngFrameNames.push(r.name);
-          } else {
-            r.lastStatus = `OK(${scanned})`;
-          }
+        if (!scanned) {
+          cur.passed = false;
+          cur.lastStatus = 'NG(未検出)';
+          handleStepFail(stepNum, `❌ <b>Step ${stepNum} 【${cur.name}】(コード照合)</b><br>QR/バーコードが読み取れませんでした。<br>(正解コード: <b>${expected}</b>)`);
+        } else if (scanned !== expected) {
+          cur.passed = false;
+          cur.lastStatus = `NG(${scanned})`;
+          handleStepFail(stepNum, `❌ <b>Step ${stepNum} 【${cur.name}】(コード照合)</b><br>コードが一致しません！<br>読取値: <b>${scanned}</b> ≠ 正解: <b>${expected}</b>`);
+        } else {
+          cur.passed = true;
+          cur.lastStatus = `OK(${scanned})`;
+          handleStepPass(stepNum, totalSteps, `${cur.name}[コード照合]: 合格 (${scanned})`);
         }
       }
+    }
 
+    // ステップ合格時の処理（次ステップへ進行 または 全工程完了で品番読取画面へ戻る）
+    function handleStepPass(stepNum, totalSteps, logDetail) {
+      triggerFlash('OK');
+      beep(1350, 0.14);
+      updateStepUI();
       drawCanvas();
-      document.getElementById('aiLiveBadge').textContent = `品番 [${currentPartName}] 検査完了`;
 
-      if (allPass) {
+      if (stepNum < totalSteps) {
+        // 次のステップへ進む
+        currentStepIndex++;
+        updateStepUI();
+        drawCanvas();
+        const nextStep = stepsList[currentStepIndex];
+        speakText(`ステップ ${stepNum} 合格。次は、${nextStep.name} を置いてください`);
+      } else {
+        // ★ 最終ステップ合格（全工程完了）➔ 品番読み取り画面へ自動で戻る ★
         statOkCount++;
         updateStatsUI();
-        notifyResult(true, `品番[${currentPartName}] 全 ${multiRois.length} 枠 合格`, '');
-      } else {
-        statNgCount++;
-        updateStatsUI();
-        notifyResult(false, ngReasons.join('<br>'), ngFrameNames.join('、'));
+        const worker = document.getElementById('lblWorker').textContent;
+        addLog(worker, currentPartName, 'OK', `全${totalSteps}ステップ完了 (${logDetail})`);
+
+        speakText(`全工程合格です。品番読み取り画面へ戻ります`);
+        document.getElementById('completePartText').textContent = `品番 【 ${currentPartName} 】 全 ${totalSteps} ステップ合格！`;
+        document.getElementById('completeOverlay').style.display = 'flex';
+
+        setTimeout(() => {
+          returnToSelectorScreen();
+        }, 1800);
       }
+    }
+
+    // ステップNG時の処理（そのステップで停止しロック画面を表示）
+    function handleStepFail(stepNum, reasonHtml) {
+      statNgCount++;
+      updateStatsUI();
+      triggerFlash('NG');
+      beep(300, 0.45, 'square');
+      updateStepUI();
+      drawCanvas();
+
+      const worker = document.getElementById('lblWorker').textContent;
+      addLog(worker, currentPartName, 'NG', reasonHtml.replace(/<[^>]*>/g, ' '));
+
+      speakText(`ステップ ${stepNum}、検査NGです。ワークを確認してください`);
+      saveNgEvidenceImage();
+      document.getElementById('ngReasonDetails').innerHTML = reasonHtml;
+      document.getElementById('ngLockOverlay').style.display = 'flex';
     }
 
     function updateStatsUI() {
@@ -1622,24 +1787,6 @@
       setTimeout(() => el.className = '', 450);
     }
 
-    function notifyResult(isOk, msgHtml, ngNames) {
-      const worker = document.getElementById('lblWorker').textContent;
-      addLog(worker, currentPartName, isOk ? 'OK' : 'NG', msgHtml.replace(/<[^>]*>/g, ' '));
-
-      if (isOk) {
-        triggerFlash('OK');
-        beep(1300, 0.15);
-        speakText('合格');
-      } else {
-        triggerFlash('NG');
-        beep(300, 0.45, 'square');
-        speakText(`検査NG。${ngNames}を確認してください`);
-        saveNgEvidenceImage();
-        document.getElementById('ngReasonDetails').innerHTML = msgHtml;
-        document.getElementById('ngLockOverlay').style.display = 'flex';
-      }
-    }
-
     function unlockNgScreen() {
       document.getElementById('ngLockOverlay').style.display = 'none';
     }
@@ -1647,7 +1794,7 @@
     function saveNgEvidenceImage() {
       try {
         const link = document.createElement('a');
-        link.download = `NG_${currentPartName}_${Date.now()}.jpg`;
+        link.download = `NG_${currentPartName}_Step${currentStepIndex + 1}_${Date.now()}.jpg`;
         link.href = canvas.toDataURL('image/jpeg', 0.85);
         link.click();
       } catch(e){}
@@ -1656,19 +1803,22 @@
     // --- プロファイル保存・読込・JSON共有 ---
     function saveCurrentProfile() {
       if (!currentPartName) return alert('品番が設定されていません');
-      const roisData = multiRois.map(r => ({
-        name: r.name, x: r.x, y: r.y, w: r.w, h: r.h, type: r.type,
-        bakerySamples: r.bakerySamples || [],
-        bakeryThreshold: r.bakeryThreshold || 80,
-        expectedBarcode: r.expectedBarcode || ''
+      const stepsData = stepsList.map(s => ({
+        name: s.name,
+        type: s.type,
+        isFullFrame: s.isFullFrame !== false,
+        x: s.x, y: s.y, w: s.w, h: s.h,
+        bakerySamples: s.bakerySamples || [],
+        bakeryThreshold: s.bakeryThreshold || 80,
+        expectedBarcode: s.expectedBarcode || ''
       }));
 
       try {
         const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-        p[currentPartName] = { roisData };
+        p[currentPartName] = { stepsData };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
         updateSelectorDropdown();
-        alert(`品番 [${currentPartName}] の検査枠・パン屋マスター設定を保存しました`);
+        alert(`品番 [${currentPartName}] の全 ${stepsData.length} ステップ順序・設定を保存しました`);
       } catch(err) {
         alert('保存容量上限に達しました。JSON書出をご利用ください。');
       }
@@ -1676,23 +1826,28 @@
 
     function loadProfileByName(name) {
       const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')[name];
-      clearAllRois();
+      stepsList = [];
 
-      if (p && p.roisData && p.roisData.length > 0) {
-        p.roisData.forEach(rd => {
-          const roi = createNewRoi(rd.x, rd.y, rd.w, rd.h, rd.type || 'BAKERY');
-          roi.name = rd.name;
-          roi.bakerySamples = rd.bakerySamples || [];
-          roi.bakeryThreshold = rd.bakeryThreshold || 80;
-          roi.expectedBarcode = rd.expectedBarcode || '';
-          multiRois.push(roi);
+      if (p && p.stepsData && p.stepsData.length > 0) {
+        p.stepsData.forEach(sd => {
+          const step = createStepObject(sd.type || 'BAKERY', sd.name);
+          step.isFullFrame = sd.isFullFrame !== false;
+          step.x = sd.x || 0;
+          step.y = sd.y || 0;
+          step.w = sd.w || canvas.width;
+          step.h = sd.h || canvas.height;
+          step.bakerySamples = sd.bakerySamples || [];
+          step.bakeryThreshold = sd.bakeryThreshold || 80;
+          step.expectedBarcode = sd.expectedBarcode || '';
+          step.passed = false;
+          stepsList.push(step);
         });
       } else {
-        // 新規品番の場合は初期枠を1つ自動配置
-        addRoi(60, 60, 220, 220, 'BAKERY');
+        // 新規品番の場合は初期ステップ（画面全体枠）を1つ自動生成
+        stepsList.push(createStepObject('BAKERY', 'ワーク 1'));
       }
-      activeRoiIndex = 0;
-      updateRoiListUI();
+      currentStepIndex = 0;
+      updateStepUI();
       drawCanvas();
     }
 
@@ -1710,7 +1865,7 @@
       const blob = new Blob([p], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `Bakery_QR_Profiles_${Date.now()}.json`;
+      a.download = `Step_Bakery_QR_Profiles_${Date.now()}.json`;
       a.click();
     }
 
@@ -1755,7 +1910,7 @@
       const blob = new Blob([new Uint8Array([0xEF, 0xBB, 0xBF]), csv], { type: 'text/csv;charset=utf-8;' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `Inspection_Log_${Date.now()}.csv`;
+      a.download = `Step_Inspection_Log_${Date.now()}.csv`;
       a.click();
     }
 
@@ -1771,7 +1926,7 @@
       }
       if (currentScreen === 'INSPECTOR' && e.code === 'Space') {
         e.preventDefault();
-        executeInspection();
+        executeCurrentStepInspection();
       }
     });
 
