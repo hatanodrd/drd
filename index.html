@@ -43,7 +43,6 @@
       position: relative; 
     }
 
-    /* 外枠フラッシュ演出 */
     #borderFlash {
       position: fixed;
       inset: 0;
@@ -91,7 +90,6 @@
       align-items: center;
     }
 
-    /* 共通ボタン・入力欄スタイル（背景と文字の同化・見切れ防止） */
     .btn {
       padding: 8px 12px;
       border: 1.5px solid #1e293b;
@@ -152,9 +150,7 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.05);
     }
 
-    /* =================================================
-       1. トップメニュー画面 (#screenHome)
-       ================================================= */
+    /* 1. トップメニュー画面 (#screenHome) */
     #screenHome {
       flex: 1;
       padding: 18px 14px;
@@ -190,9 +186,7 @@
       color: #ffffff !important;
     }
 
-    /* =================================================
-       2. 品番読み取り・選択画面 (#screenSelector - 検査用)
-       ================================================= */
+    /* 2. 品番読み取り・選択画面 (#screenSelector) */
     #screenSelector {
       display: none;
       flex: 1;
@@ -220,16 +214,19 @@
     #selectorQrReader video { object-fit: cover !important; }
     #selectorOcrVideo { width: 100%; height: 100%; object-fit: cover; display: none; }
 
+    /* OCRターゲット枠（この枠の見た目そのままの範囲を正確に切り抜きます） */
     .ocr-scan-box {
       position: absolute;
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      width: 78%;
-      height: 38px;
+      width: 76%;
+      height: 15%;
+      min-height: 34px;
+      max-height: 52px;
       border: 2.5px solid #4ade80;
       border-radius: 4px;
-      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+      box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.58);
       pointer-events: none;
       display: none;
       align-items: center;
@@ -258,17 +255,18 @@
       border-radius: 6px;
       font-size: 0.8rem;
       font-weight: bold;
+      flex-wrap: wrap;
     }
     #ocrCropCanvas {
-      width: 110px;
-      height: 24px;
-      border: 1px solid #1e293b;
+      height: 30px;
+      width: auto;
+      max-width: 160px;
+      object-fit: contain;
+      border: 1.5px solid #1e293b;
       background: #fff;
     }
 
-    /* =================================================
-       3. 順番ステップ検査画面 (#screenInspector - 作業者専用)
-       ================================================= */
+    /* 3. 順番ステップ検査画面 (#screenInspector) */
     #screenInspector {
       display: none;
       flex: 1;
@@ -335,7 +333,6 @@
     .step-dot.done { background: #22c55e; }
     .step-dot.current { background: #facc15; box-shadow: 0 0 6px #facc15; }
 
-    /* チャタリング防止クールダウンバナー */
     .cooldown-banner {
       display: none;
       background: #fff7ed;
@@ -387,9 +384,7 @@
       text-overflow: ellipsis;
     }
 
-    /* =================================================
-       4. 検査項目登録・システム設定画面 (#screenAdmin)
-       ================================================= */
+    /* 4. 検査項目登録・システム設定画面 (#screenAdmin) */
     #screenAdmin {
       display: none;
       flex: 1;
@@ -482,7 +477,6 @@
       gap: 4px;
     }
 
-    /* NGロック画面 & 全工程完了オーバーレイ */
     .lock-overlay {
       position: fixed;
       inset: 0;
@@ -565,16 +559,14 @@
       <p id="lblHomeQrRule" style="font-size:0.78rem; color:#475569; font-weight:bold; margin-top:2px;">QRコード読取範囲: 全桁読取</p>
     </div>
 
-    <!-- 作業者用：検査モードへ -->
     <button class="menu-hero-btn btn-success" onclick="navigateToScreen('SELECTOR')">
       🔍 検査を開始する（作業者モード）
       <span class="sub">品番を読み取り、「外箱 ➔ 内箱 ➔ 小箱 ➔ カメラ検査」を順番に行います</span>
     </button>
 
-    <!-- 管理者用：設定モードへ -->
     <button class="menu-hero-btn btn-primary" onclick="navigateToScreen('ADMIN')">
       ⚙️ 検査項目の登録・システム設定
-      <span class="sub">CSVマスター(A列:品番/F列:コード)取込・カメラ検査(パン屋AI/追加コード)紐づけ・QR桁数設定</span>
+      <span class="sub">CSVマスター(A列:品番/F列:コード・下から順)取込・カメラ検査紐づけ・QR桁数設定</span>
     </button>
   </div>
 
@@ -608,10 +600,10 @@
       </div>
 
       <div class="ocr-preview-bar" id="selectorOcrBar">
-        <span>2値化:</span>
+        <span>枠内切り抜き(2値化):</span>
         <canvas id="ocrCropCanvas"></canvas>
-        <span>読取文字: <b id="lblOcrDetected" style="color:var(--primary); font-size:0.95rem;">---</b></span>
-        <button class="btn btn-success" style="margin-left:auto; padding:4px 10px;" onclick="confirmOcrDetectedCode()">この文字で決定 ➔</button>
+        <span>読取結果: <b id="lblOcrDetected" style="color:var(--primary); font-size:0.95rem;">---</b></span>
+        <button class="btn btn-success" style="margin-left:auto; padding:5px 10px;" onclick="confirmOcrDetectedCode()">この文字で決定 ➔</button>
       </div>
 
       <div style="display:flex; gap:6px; margin-top:4px;">
@@ -631,7 +623,6 @@
 
   <!-- =========================================================
        【画面3】 検査フロー②：順番ステップ検査実行画面 (#screenInspector)
-       ※作業者に関係のある表示のみ配置
        ========================================================= -->
   <div id="screenInspector">
     <div class="inspector-header-bar">
@@ -645,7 +636,6 @@
       </div>
     </div>
 
-    <!-- 現在のステップ指示バナー（外箱・内箱・小箱メッセージ統一） -->
     <div class="step-nav-banner">
       <div class="step-progress-row">
         <span class="step-badge" id="lblInspectStepBadge">Step 1 / 1</span>
@@ -654,23 +644,19 @@
       <div class="step-dots" id="inspectStepDots"></div>
     </div>
 
-    <!-- 同一JANチャタリング防止用インターバル表示バナー -->
     <div class="cooldown-banner" id="cooldownBanner">
       ⏳ 持ち替え待機中... 次の箱・ワークを準備してください (<span id="lblCooldownSec" style="color:#c2410c;">2.0</span>秒)
     </div>
 
-    <!-- カメラ映像 -->
     <div class="viewport">
       <div class="live-badge" id="inspectLiveBadge">カメラ準備中...</div>
       <canvas id="inspectCanvas"></canvas>
     </div>
 
-    <!-- 検査実行ボタン（カメラ読取用メインボタン） -->
     <button id="btnExecuteStep" class="btn btn-success" style="width:100%; padding:15px; font-size:1.12rem;" onclick="executeCurrentStepInspection()">
       🔍 【 外箱 】のコードを読み取る (タップ / Space)
     </button>
 
-    <!-- 外付けバーコードリーダー併用入力欄（コード照合ステップ時のみ表示） -->
     <div id="inspectorExternalScanRow" style="display:flex; gap:6px;">
       <input type="text" id="txtInspectorCodeInput" placeholder="外付けリーダー読取 / コード手入力でも照合可能" style="flex:1;" autocomplete="off">
       <button class="btn btn-qr" onclick="handleInspectorExternalCode()">コード照合</button>
@@ -681,21 +667,20 @@
        【画面4】 検査項目登録・システム設定画面 (#screenAdmin)
        ========================================================= -->
   <div id="screenAdmin">
-    <!-- 左カラム：CSV一括取込・QR設定・品番選択・カメラプレビュー -->
     <div class="admin-left">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <span style="font-weight:900; font-size:1rem; color:var(--primary);">⚙️ 検査項目の登録・システム設定</span>
         <button class="btn btn-outline" onclick="navigateToScreen('HOME')">🏠 トップメニューへ戻る</button>
       </div>
 
-      <!-- A. CSVマスター一括取込 (A列:品番 / F列:コード値 / 1行目見出し / 文字コード自動判別) -->
+      <!-- A. CSVマスター一括取込 (A列:品番 / F列:コード値 / 下の行から外箱➔内箱➔小箱) -->
       <div class="card-box" style="background:#f0fdf4; border-color:#16a34a;">
         <div class="sec-title" style="border-left-color:#16a34a; margin-bottom:2px;">
           📄 ① CSV対応一覧表の取込 (A列:品番 ／ F列:コード値)
         </div>
         <div style="font-size:0.75rem; color:#1e293b;">
           ※1行目(見出し)は自動スキップ、文字コード(UTF-8/Shift-JIS)は自動判別します。<br>
-          ※同じ品番が複数行ある場合は上から順に<b>「外箱」➔「内箱」➔「小箱」(最大3行)</b>として登録され、追加済みのカメラ検査ステップもそのまま維持されます。
+          ※同じ品番が複数行ある場合は<b>下の行から順に「外箱」➔「内箱」➔「小箱」(最大3行)</b>として登録され、追加済みのカメラ検査ステップもそのまま維持されます。
         </div>
         <div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
           <input type="file" id="csvMasterFileInput" accept=".csv" style="flex:1; font-size:0.8rem;" onchange="importMasterCsvFile(event)">
@@ -746,9 +731,7 @@
       </div>
     </div>
 
-    <!-- 右カラム：選択ステップのAI/QR登録 ＆ ステップ順序編成 -->
     <div class="admin-right">
-      <!-- 1. 選択中ステップの登録カード（パン屋AI または QR/バーコード） -->
       <div id="secAdminStepConfig">
         <!-- パン屋AIマスター登録パネル -->
         <div id="cardAdminBakery" class="mode-card bakery-theme">
@@ -789,7 +772,6 @@
         </div>
       </div>
 
-      <!-- 2. 検査ステップ順序リスト（外箱➔内箱➔小箱➔追加コード/パン屋AI） -->
       <div class="card-box" style="flex:1;">
         <div class="sec-title" style="margin-bottom:2px;">
           🔢 検査ステップ順序 (外箱・内箱・小箱の後にカメラ検査や追加コードを紐づけ可能)
@@ -801,7 +783,6 @@
 
         <div class="roi-list-box" id="adminStepListContainer"></div>
 
-        <!-- 検査枠サイズ調整パネル（初期値＝カメラ画面全体100%） -->
         <div class="adjust-panel">
           <div style="display:flex; justify-content:space-between; align-items:center;">
             <b>🎯 選択ステップの検査枠サイズ (初期値＝カメラ画面全体):</b>
@@ -827,14 +808,14 @@
     </div>
   </div>
 
-  <!-- NGロック画面（未登録品番エラー ＆ ステップ検査NG共通） -->
+  <!-- NGロック画面 -->
   <div class="lock-overlay" id="ngLockOverlay">
     <h1 style="font-size:2.4rem;">⚠️ エラー / 検査 NG</h1>
     <div id="ngReasonDetails" style="font-size:1.05rem; max-height:42vh; overflow-y:auto; text-align:left; background:rgba(0,0,0,0.4); padding:14px; border-radius:6px; width:100%; max-width:520px; border:1.5px solid #fca5a5;"></div>
     <button class="btn btn-outline" style="padding:12px 28px; font-size:1.05rem; background:#ffffff; color:#c62828 !important; border:2px solid #000000;" onclick="unlockNgScreen()">確認して解除 (Enter / Space)</button>
   </div>
 
-  <!-- 全ステップ完了（総合合格）オーバーレイ -->
+  <!-- 全ステップ完了オーバーレイ -->
   <div class="complete-overlay" id="completeOverlay">
     <h1 style="font-size:2.8rem;">🎉 全工程 合格！</h1>
     <p id="completePartText" style="font-size:1.25rem; font-weight:bold;">品番の全ステップが完了しました</p>
@@ -845,18 +826,16 @@
     const STORAGE_KEY = 'seq_box_bakery_profiles_v3';
     const LOG_KEY = 'seq_box_bakery_logs_v3';
     const QR_RANGE_KEY = 'seq_box_bakery_qrrange_v3';
-    const BOX_NAMES = ['外箱', '内箱', '小箱']; // 上から最大3行の標準呼称
+    const BOX_NAMES = ['外箱', '内箱', '小箱'];
 
-    let currentScreen = 'HOME'; // 'HOME', 'SELECTOR', 'INSPECTOR', 'ADMIN'
+    let currentScreen = 'HOME';
     let currentPartName = '';
 
-    // カメラ・ハードウェア状態
     let isCamRunning = false;
     let camStream = null;
     let torchEnabled = false;
     let voiceEnabled = true;
 
-    // AI・OCR・QRインスタンス（メモリリーク防止のため単一インスタンスを再利用）
     let mobilenetModel = null;
     let bakeryInterval = null;
     let isLiveInferring = false;
@@ -866,18 +845,17 @@
     let selectorOcrStream = null;
     let selectorOcrTimer = null;
     let isOcrBusy = false;
+    let isSelectorScanHandling = false; // 品番スキャン時の多重発火防止フラグ
     let ocrWorker = null;
     let roiQrScanner = null;
     let nativeBarcodeDetector = null;
 
-    // チャタリング（同一JAN連続空打ち）防止＆二重実行防止ロック
     let isInspectingStep = false;
     let isChatteringCooldown = false;
     let cooldownTimerId = null;
     let lastExternalScanCode = '';
     let lastExternalScanTime = 0;
 
-    // ステップリスト管理
     let stepsList = [];
     let currentStepIndex = 0;
     let isRoiLocked = true;
@@ -885,7 +863,6 @@
     let statOkCount = 0;
     let statNgCount = 0;
 
-    // キャンバス参照（毎回生成せず再利用してメモリ消費をゼロ化）
     const video = document.getElementById('videoSource');
     const inspectCanvas = document.getElementById('inspectCanvas');
     const inspectCtx = inspectCanvas.getContext('2d', { willReadFrequently: true });
@@ -895,12 +872,23 @@
     const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
     const decodeTempCanvas = document.createElement('canvas');
     const decodeTempCtx = decodeTempCanvas.getContext('2d', { willReadFrequently: true });
+    const ocrRecognizeCanvas = document.createElement('canvas');
+    const ocrRecognizeCtx = ocrRecognizeCanvas.getContext('2d', { willReadFrequently: true });
 
     let dragMode = null; 
     let resizeHandle = null;
     let startX = 0, startY = 0, currentX = 0, currentY = 0;
     let initialRoi = null;
     const HANDLE_RADIUS = 20;
+
+    function safeGetStorage(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : fallback;
+      } catch (e) {
+        return fallback;
+      }
+    }
 
     function getActiveCanvas() {
       return currentScreen === 'ADMIN' ? adminCanvas : inspectCanvas;
@@ -941,7 +929,7 @@
     }
 
     // =========================================================
-    // 📄 1. CSVマスター自動取込 (1行目見出しスキップ / 文字コード自動判別 / A列:品番・F列:コード)
+    // 📄 1. CSVマスター自動取込 (1行目見出しスキップ / 文字コード自動判別 / 下の行から外箱➔内箱➔小箱)
     // =========================================================
     function parseCsvLine(line) {
       const result = [];
@@ -975,7 +963,6 @@
       reader.onload = function(evt) {
         const buffer = evt.target.result;
         let text = '';
-        // UTF-8 / Shift-JIS 自動判別
         try {
           const utf8Decoder = new TextDecoder('utf-8', { fatal: true });
           text = utf8Decoder.decode(buffer);
@@ -995,24 +982,21 @@
         return alert('CSVにデータ行がありません（1行目は見出しとしてスキップされます）');
       }
 
-      // A列(index 0)=品番、F列(index 5)=コード値 を品番ごとに最大3行までグループ化
-      const csvMap = {}; // { partNo: [code1, code2, code3] }
+      const csvMap = {};
       let rowCount = 0;
 
-      // ★1行目(i=0)は見出し行としてスキップ
+      // 1行目(i=0)は見出し行としてスキップ
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) continue;
         const cols = parseCsvLine(line);
         const partNo = normalizeCodeString(cols[0] || '');
-        const codeVal = normalizeCodeString(cols[5] || ''); // F列 (0始まりで5番目)
+        const codeVal = normalizeCodeString(cols[5] || ''); // F列 (index 5)
 
         if (!partNo || !codeVal) continue;
         if (!csvMap[partNo]) csvMap[partNo] = [];
-        if (csvMap[partNo].length < 3) { // 最大3行（外箱・内箱・小箱）
-          csvMap[partNo].push(codeVal);
-          rowCount++;
-        }
+        csvMap[partNo].push(codeVal);
+        rowCount++;
       }
 
       const partKeys = Object.keys(csvMap);
@@ -1020,23 +1004,25 @@
         return alert('有効なデータが見つかりませんでした。A列に品番、F列にコード値が入力されているか確認してください。');
       }
 
-      const storedProfiles = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      const storedProfiles = safeGetStorage(STORAGE_KEY, {});
 
       partKeys.forEach(partNo => {
-        const codes = csvMap[partNo];
-        // CSV由来のステップ（外箱 ➔ 内箱 ➔ 小箱）を生成
+        // ★ 下の行から順に「外箱 ➔ 内箱 ➔ 小箱」として最大3行を割り当て ★
+        const rawCodes = csvMap[partNo];
+        const codes = rawCodes.slice(-3).reverse();
+
         const csvSteps = codes.map((code, idx) => ({
           name: BOX_NAMES[idx] || `コード ${idx + 1}`,
           type: 'BARCODE',
           fromCsv: true,
           isFullFrame: true,
           x: 0, y: 0, w: 640, h: 480,
+          refW: 640, refH: 480,
           bakerySamples: [],
           bakeryThreshold: 80,
           expectedBarcode: code
         }));
 
-        // 既に設定画面で追加されていた「パン屋AI検査」や「CSV外の追加コード検査」があれば後ろに維持する
         const existingSteps = (storedProfiles[partNo] && storedProfiles[partNo].stepsData) ? storedProfiles[partNo].stepsData : [];
         const customSteps = existingSteps.filter(s => !s.fromCsv);
 
@@ -1051,7 +1037,7 @@
         if (partKeys.length > 0) {
           loadAdminProfile(partKeys[0]);
         }
-        alert(`CSV取込完了！\n・登録品番数: ${partKeys.length} 件 (計 ${rowCount} 行)\n・各品番に「外箱 ➔ 内箱 ➔ 小箱」ステップを自動設定しました。`);
+        alert(`CSV取込完了！\n・登録品番数: ${partKeys.length} 件 (計 ${rowCount} 行)\n・下の行から順に「外箱 ➔ 内箱 ➔ 小箱」として設定しました。`);
       } catch (err) {
         alert('LocalStorageの容量上限に達しました。不要な品番を削除してください。');
       }
@@ -1061,15 +1047,11 @@
     // ✂️ 2. システム共通：QRコード専用の桁数切り出し処理
     // =========================================================
     function getQrRangeConfig() {
-      try {
-        const cfg = JSON.parse(localStorage.getItem(QR_RANGE_KEY) || '{}');
-        return {
-          start: parseInt(cfg.start, 10) || 0,
-          end: parseInt(cfg.end, 10) || 0
-        };
-      } catch(e) {
-        return { start: 0, end: 0 };
-      }
+      const cfg = safeGetStorage(QR_RANGE_KEY, {});
+      return {
+        start: parseInt(cfg.start, 10) || 0,
+        end: parseInt(cfg.end, 10) || 0
+      };
     }
 
     function applyQrSubstringRule(rawText, isQrCode) {
@@ -1119,11 +1101,19 @@
       document.getElementById('lblSelectorQrBadge').textContent = `QR設定: ${desc}`;
     }
 
-    function isResultQrFormat(decodedResult) {
+    // 検出結果がQRコードかどうかを厳密に判定（JANコード等の1次元バーコードはfalse）
+    function isResultQrFormat(decodedResult, decodedText) {
       try {
         const fmtName = decodedResult?.result?.format?.formatName || '';
-        if (!fmtName) return true;
-        return fmtName.toUpperCase().includes('QR');
+        if (fmtName) {
+          return fmtName.toUpperCase().includes('QR');
+        }
+        // フォーマット名が取得できない環境で、8桁または13桁の数字のみ(JAN/EAN)の場合は1次元バーコードとみなす
+        const clean = normalizeCodeString(decodedText);
+        if (/^\d{8}$|^\d{13}$/.test(clean)) {
+          return false;
+        }
+        return true;
       } catch(e) {
         return true;
       }
@@ -1151,6 +1141,7 @@
       if (target === 'HOME') {
         document.getElementById('screenHome').style.display = 'flex';
       } else if (target === 'SELECTOR') {
+        isSelectorScanHandling = false;
         document.getElementById('screenSelector').style.display = 'flex';
       } else if (target === 'INSPECTOR') {
         document.getElementById('screenInspector').style.display = 'flex';
@@ -1158,7 +1149,7 @@
         announceCurrentStep();
       } else if (target === 'ADMIN') {
         document.getElementById('screenAdmin').style.display = 'flex';
-        const profiles = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const profiles = safeGetStorage(STORAGE_KEY, {});
         const keys = Object.keys(profiles);
         if (currentPartName && profiles[currentPartName]) {
           loadAdminProfile(currentPartName);
@@ -1176,7 +1167,7 @@
     }
 
     function updateProfileDropdowns() {
-      const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      const p = safeGetStorage(STORAGE_KEY, {});
       const keys = Object.keys(p);
 
       document.getElementById('lblHomeMasterCount').textContent = `登録品番数: ${keys.length} 件`;
@@ -1208,13 +1199,16 @@
     }
 
     // =========================================================
-    // 【画面2】 検査モード：品番読み取り ＆ 未登録品番のエラー停止
+    // 【画面2】 検査モード：品番読み取り ＆ OCR枠100%完全同期切り抜き
     // =========================================================
     function verifyAndStartInspection(partCode) {
       const code = normalizeCodeString(partCode);
-      if (!code) return;
+      if (!code) {
+        isSelectorScanHandling = false;
+        return;
+      }
 
-      const profiles = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      const profiles = safeGetStorage(STORAGE_KEY, {});
       if (!profiles[code] || !profiles[code].stepsData || profiles[code].stepsData.length === 0) {
         statNgCount++;
         updateStatsUI();
@@ -1227,6 +1221,7 @@
           CSVマスターまたは設定画面にこの品番が登録されていません。
         `;
         document.getElementById('ngLockOverlay').style.display = 'flex';
+        isSelectorScanHandling = false;
         return;
       }
 
@@ -1239,6 +1234,7 @@
 
     async function startSelectorBarcodeScan() {
       await stopSelectorCamera();
+      isSelectorScanHandling = false;
       const box = document.getElementById('selectorCamBox');
       const qrDiv = document.getElementById('selectorQrReader');
       box.style.display = 'block';
@@ -1249,9 +1245,11 @@
         { facingMode: "environment" },
         { fps: 15, qrbox: { width: 240, height: 150 } },
         (decodedText, decodedResult) => {
-          const isQr = isResultQrFormat(decodedResult);
+          if (isSelectorScanHandling) return;
+          const isQr = isResultQrFormat(decodedResult, decodedText);
           const code = applyQrSubstringRule(decodedText, isQr);
           if (code) {
+            isSelectorScanHandling = true;
             beep(1300, 0.12);
             stopSelectorCamera().then(() => verifyAndStartInspection(code));
           }
@@ -1265,6 +1263,7 @@
 
     async function startSelectorOcrScan() {
       await stopSelectorCamera();
+      isSelectorScanHandling = false;
       const box = document.getElementById('selectorCamBox');
       const ocrVid = document.getElementById('selectorOcrVideo');
       const ocrBox = document.getElementById('selectorOcrBox');
@@ -1292,7 +1291,7 @@
           });
         }
         document.getElementById('lblOcrDetected').textContent = '読取中...';
-        selectorOcrTimer = setInterval(processSelectorOcrFrame, 450);
+        selectorOcrTimer = setInterval(processSelectorOcrFrame, 420);
       } catch (err) {
         alert('OCRカメラ起動エラー: ' + err.message);
         stopSelectorCamera();
@@ -1320,19 +1319,51 @@
       return threshold;
     }
 
+    // ★ 画面上の緑枠(#selectorOcrBox)の見た目の位置・サイズと100%一致する領域を切り抜く ★
+    function getExactVideoCropRect(videoEl, boxEl) {
+      const vRect = videoEl.getBoundingClientRect();
+      const bRect = boxEl.getBoundingClientRect();
+      const nw = videoEl.videoWidth;
+      const nh = videoEl.videoHeight;
+
+      if (vRect.width === 0 || vRect.height === 0 || nw === 0 || nh === 0) {
+        return null;
+      }
+
+      // object-fit: cover による表示拡大率とトリミングオフセットを正確に算出
+      const scale = Math.max(vRect.width / nw, vRect.height / nh);
+      const renderedW = nw * scale;
+      const renderedH = nh * scale;
+      const offsetX = (renderedW - vRect.width) / 2;
+      const offsetY = (renderedH - vRect.height) / 2;
+
+      const relLeft = bRect.left - vRect.left;
+      const relTop = bRect.top - vRect.top;
+
+      const sx = Math.max(0, Math.round((relLeft + offsetX) / scale));
+      const sy = Math.max(0, Math.round((relTop + offsetY) / scale));
+      const cw = Math.min(nw - sx, Math.max(10, Math.round(bRect.width / scale)));
+      const ch = Math.min(nh - sy, Math.max(10, Math.round(bRect.height / scale)));
+
+      return { sx, sy, cw, ch };
+    }
+
     async function processSelectorOcrFrame() {
-      if (isOcrBusy || !selectorOcrStream) return;
+      if (isOcrBusy || isSelectorScanHandling || !selectorOcrStream) return;
       const vid = document.getElementById('selectorOcrVideo');
+      const boxEl = document.getElementById('selectorOcrBox');
       const cCanvas = document.getElementById('ocrCropCanvas');
       if (!vid || vid.videoWidth === 0) return;
 
-      isOcrBusy = true;
-      const cw = Math.floor(vid.videoWidth * 0.75);
-      const ch = Math.floor(vid.videoHeight * 0.12);
-      const sx = Math.floor((vid.videoWidth - cw) / 2);
-      const sy = Math.floor((vid.videoHeight - ch) / 2);
+      const cropRect = getExactVideoCropRect(vid, boxEl);
+      if (!cropRect) return;
 
-      cCanvas.width = cw; cCanvas.height = ch;
+      isOcrBusy = true;
+      const { sx, sy, cw, ch } = cropRect;
+
+      // プレビューキャンバスに緑枠と完全一致する範囲を描画＆2値化
+      cCanvas.width = cw;
+      cCanvas.height = ch;
       const cCtx = cCanvas.getContext('2d', { willReadFrequently: true });
       cCtx.drawImage(vid, sx, sy, cw, ch, 0, 0, cw, ch);
 
@@ -1349,13 +1380,22 @@
       }
       cCtx.putImageData(imgData, 0, 0);
 
+      // OCR認識精度を高めるため、周囲に12pxの白余白を付加してTesseractへ渡す
+      const pad = 12;
+      ocrRecognizeCanvas.width = cw + pad * 2;
+      ocrRecognizeCanvas.height = ch + pad * 2;
+      ocrRecognizeCtx.fillStyle = '#ffffff';
+      ocrRecognizeCtx.fillRect(0, 0, ocrRecognizeCanvas.width, ocrRecognizeCanvas.height);
+      ocrRecognizeCtx.drawImage(cCanvas, pad, pad);
+
       try {
-        const { data: { text } } = await ocrWorker.recognize(cCanvas);
+        const { data: { text } } = await ocrWorker.recognize(ocrRecognizeCanvas);
         const cleaned = normalizeCodeString(text).replace(/[^A-Za-z0-9_-]/g, '');
         if (cleaned.length >= 2) {
           document.getElementById('lblOcrDetected').textContent = cleaned;
-          const profiles = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
-          if (profiles[cleaned]) {
+          const profiles = safeGetStorage(STORAGE_KEY, {});
+          if (profiles[cleaned] && !isSelectorScanHandling) {
+            isSelectorScanHandling = true;
             beep(1300, 0.12);
             await stopSelectorCamera();
             verifyAndStartInspection(cleaned);
@@ -1436,13 +1476,17 @@
           defaultName = `カメラ検査 ${bakeryCount + 1}`;
         }
       }
+      const cvs = getActiveCanvas();
+      const cw = (cvs && cvs.width > 0) ? cvs.width : 640;
+      const ch = (cvs && cvs.height > 0) ? cvs.height : 480;
       return {
         id: Date.now() + Math.random(),
         name: defaultName,
-        type, // 'BARCODE' or 'BAKERY'
+        type,
         fromCsv: !!fromCsv,
         isFullFrame: true,
-        x: 0, y: 0, w: 640, h: 480,
+        x: 0, y: 0, w: cw, h: ch,
+        refW: cw, refH: ch,
         bakerySamples: [],
         bakeryThreshold: 80,
         expectedBarcode: '',
@@ -1451,12 +1495,24 @@
       };
     }
 
+    // カメラ解像度が確定しているときに、保存時の基準解像度(refW/refH)に合わせてカスタム枠をスケール＆クランプ補正
     function syncStepRoiToCanvas(step, cvs) {
-      if (!step || !cvs) return;
+      if (!step || !cvs || cvs.width === 0 || cvs.height === 0) return;
       if (step.isFullFrame) {
         step.x = 0; step.y = 0;
         step.w = cvs.width; step.h = cvs.height;
+        step.refW = cvs.width; step.refH = cvs.height;
       } else {
+        if (step.refW && step.refH && (step.refW !== cvs.width || step.refH !== cvs.height)) {
+          const scaleX = cvs.width / step.refW;
+          const scaleY = cvs.height / step.refH;
+          step.x = Math.round(step.x * scaleX);
+          step.y = Math.round(step.y * scaleY);
+          step.w = Math.round(step.w * scaleX);
+          step.h = Math.round(step.h * scaleY);
+          step.refW = cvs.width;
+          step.refH = cvs.height;
+        }
         step.w = Math.max(40, Math.min(cvs.width, Math.round(step.w)));
         step.h = Math.max(40, Math.min(cvs.height, Math.round(step.h)));
         step.x = Math.max(0, Math.min(cvs.width - step.w, Math.round(step.x)));
@@ -1465,6 +1521,7 @@
     }
 
     async function startMainCamera() {
+      stopMainCamera();
       try {
         camStream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' }
@@ -1490,6 +1547,9 @@
       }
       video.pause();
       isCamRunning = false;
+      torchEnabled = false;
+      const btnTorch = document.getElementById('btnTorch');
+      if (btnTorch) btnTorch.className = 'btn btn-outline';
     }
 
     async function toggleTorch() {
@@ -1534,7 +1594,6 @@
       return Math.round(Math.max(0, Math.min(1, maxSim)) * 100);
     }
 
-    // 枠内からQR/バーコードを読み取り（単一のdecodeTempCanvasを再利用してメモリ肥大化を防止）
     async function decodeBarcodeFromStep(step) {
       const cvs = getActiveCanvas();
       syncStepRoiToCanvas(step, cvs);
@@ -1545,7 +1604,6 @@
       decodeTempCtx.fillRect(0, 0, decodeTempCanvas.width, decodeTempCanvas.height);
       decodeTempCtx.drawImage(video, step.x, step.y, step.w, step.h, pad, pad, step.w, step.h);
 
-      // 1. ブラウザネイティブ BarcodeDetector (単一インスタンス再利用)
       if (nativeBarcodeDetector) {
         try {
           const results = await nativeBarcodeDetector.detect(decodeTempCanvas);
@@ -1557,7 +1615,6 @@
         } catch(e){}
       }
 
-      // 2. Html5Qrcode フォールバック
       if (!roiQrScanner) {
         roiQrScanner = new Html5Qrcode("hiddenRoiQrReader");
       }
@@ -1568,11 +1625,12 @@
           try {
             if (roiQrScanner.scanFileV2) {
               const resObj = await roiQrScanner.scanFileV2(file, false);
-              const isQr = isResultQrFormat(resObj);
+              const isQr = isResultQrFormat(resObj, resObj.decodedText);
               resolve(applyQrSubstringRule(resObj.decodedText, isQr));
             } else {
               const decoded = await roiQrScanner.scanFile(file, false);
-              resolve(applyQrSubstringRule(decoded, true));
+              const isQr = isResultQrFormat(null, decoded);
+              resolve(applyQrSubstringRule(decoded, isQr));
             }
           } catch (err) {
             resolve(null);
@@ -1581,7 +1639,6 @@
       });
     }
 
-    // --- 描画＆ライブ推論ループ（検査処理中・クールダウン中は推論負荷を停止） ---
     function renderLoop(timestamp) {
       if (!isCamRunning || (currentScreen !== 'INSPECTOR' && currentScreen !== 'ADMIN')) return;
       drawActiveCanvas();
@@ -1709,7 +1766,6 @@
 
       if (cur) {
         badge.textContent = `Step ${currentStepIndex + 1} / ${total}`;
-        // ★ 要件2：外箱・内箱・小箱のコード読取メッセージを統一 ★
         if (cur.type === 'BARCODE') {
           inst.textContent = `【 ${cur.name} 】のコードを読み取ってください`;
           execBtn.textContent = `📷 Step ${currentStepIndex + 1}/${total} 【 ${cur.name} 】のコードを読み取る (Space)`;
@@ -1744,7 +1800,6 @@
       }
     }
 
-    // ★ 要件4：チャタリング（同一JANコード連続空打ち）防止インターバル制御 ★
     function startChatteringCooldown(durationMs = 2000) {
       clearChatteringCooldown();
       isChatteringCooldown = true;
@@ -1778,7 +1833,6 @@
       if (execBtn) execBtn.disabled = false;
     }
 
-    // 外付けリーダーまたは手入力でのコード照合
     function handleInspectorExternalCode() {
       const inp = document.getElementById('txtInspectorCodeInput');
       const raw = normalizeCodeString(inp.value);
@@ -1786,7 +1840,6 @@
       if (!raw) return;
 
       const now = Date.now();
-      // 同一JANコードの連続チャタリング防止（2秒以内の同一コード連打をブロック）
       if (isChatteringCooldown || (raw === lastExternalScanCode && (now - lastExternalScanTime < 2000))) {
         return;
       }
@@ -1806,7 +1859,6 @@
       }
     });
 
-    // カメラボタン（またはSpaceキー）でのステップ検査実行
     async function executeCurrentStepInspection() {
       if (!isCamRunning || isInspectingStep || isChatteringCooldown) return;
       const cur = stepsList[currentStepIndex];
@@ -1873,7 +1925,6 @@
         currentStepIndex++;
         updateInspectUI();
         drawActiveCanvas();
-        // ★ 次のステップへ移る際、2.0秒間のチャタリング防止クールダウンを作動 ★
         startChatteringCooldown(2000);
         const nextStep = stepsList[currentStepIndex];
         if (nextStep.type === 'BARCODE') {
@@ -1882,7 +1933,6 @@
           speakText(`${ stepsList[stepNum - 1].name } 合格。次は、${nextStep.name}をセットしてください`);
         }
       } else {
-        // 全ステップ完了（1行のみの場合はStep 1合格でここへ到達）➔ 自動で品番読取画面へ復帰
         statOkCount++;
         updateStatsUI();
         updateInspectUI();
@@ -1923,7 +1973,7 @@
     // 【画面4】 設定画面（品番・ステップ編成・良品登録・枠調整）
     // =========================================================
     function loadStepsFromStorage(partName) {
-      const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')[partName];
+      const p = safeGetStorage(STORAGE_KEY, {})[partName];
       stepsList = [];
       if (p && p.stepsData && p.stepsData.length > 0) {
         p.stepsData.forEach(sd => {
@@ -1931,6 +1981,7 @@
           step.isFullFrame = sd.isFullFrame !== false;
           step.x = sd.x || 0; step.y = sd.y || 0;
           step.w = sd.w || 640; step.h = sd.h || 480;
+          step.refW = sd.refW || 640; step.refH = sd.refH || 480;
           step.bakerySamples = sd.bakerySamples || [];
           step.bakeryThreshold = sd.bakeryThreshold || 80;
           step.expectedBarcode = sd.expectedBarcode || '';
@@ -1975,13 +2026,15 @@
         fromCsv: !!s.fromCsv,
         isFullFrame: s.isFullFrame !== false,
         x: s.x, y: s.y, w: s.w, h: s.h,
+        refW: s.refW || adminCanvas.width || 640,
+        refH: s.refH || adminCanvas.height || 480,
         bakerySamples: s.bakerySamples || [],
         bakeryThreshold: s.bakeryThreshold || 80,
         expectedBarcode: s.expectedBarcode || ''
       }));
 
       try {
-        const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+        const p = safeGetStorage(STORAGE_KEY, {});
         p[currentPartName] = { stepsData };
         localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
         updateProfileDropdowns();
@@ -1994,7 +2047,7 @@
     function deleteAdminProfile() {
       const name = document.getElementById('selAdminProfile').value;
       if (!name || !confirm(`登録品番 [${name}] を削除しますか？`)) return;
-      const p = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+      const p = safeGetStorage(STORAGE_KEY, {});
       delete p[name];
       localStorage.setItem(STORAGE_KEY, JSON.stringify(p));
       currentPartName = '';
@@ -2064,7 +2117,6 @@
       }
     }
 
-    // 設定画面でカメラ検査（パン屋AI）やCSV外の追加コードステップを自由に追加
     function addNewStep(type = 'BAKERY') {
       stepsList.push(createStepObject(type, '', false));
       currentStepIndex = stepsList.length - 1;
@@ -2132,7 +2184,6 @@
       }
     }
 
-    // --- 設定画面：パン屋AIマスター登録 & 正解コード読取登録 ---
     function startBakeryRegister(e) {
       if (e && e.cancelable) e.preventDefault();
       if (!isCamRunning) return alert('カメラが起動していません');
@@ -2195,7 +2246,6 @@
       }
     }
 
-    // --- 設定画面：検査枠のサイズ調整 ---
     function toggleRoiLock() {
       isRoiLocked = !isRoiLocked;
       const btn = document.getElementById('btnToggleLock');
@@ -2225,6 +2275,8 @@
       const cur = stepsList[currentStepIndex];
       if (!cur || isRoiLocked) return;
       cur.isFullFrame = false;
+      cur.refW = adminCanvas.width;
+      cur.refH = adminCanvas.height;
       if (param === 'w') cur.w += val;
       if (param === 'h') cur.h += val;
       if (param === 'x') cur.x += val;
@@ -2268,6 +2320,8 @@
       const handle = getHandleAt(pos, cur);
       if (handle) {
         cur.isFullFrame = false;
+        cur.refW = adminCanvas.width;
+        cur.refH = adminCanvas.height;
         dragMode = 'RESIZE';
         resizeHandle = handle;
         initialRoi = { ...cur };
@@ -2318,6 +2372,8 @@
         const w = Math.abs(currentX - startX), h = Math.abs(currentY - startY);
         if (w > 45 && h > 45) {
           cur.isFullFrame = false;
+          cur.refW = adminCanvas.width;
+          cur.refH = adminCanvas.height;
           cur.x = x; cur.y = y; cur.w = w; cur.h = h;
           syncStepRoiToCanvas(cur, adminCanvas);
         }
@@ -2338,7 +2394,7 @@
     function exportProfilesJson() {
       const payload = {
         qrRange: getQrRangeConfig(),
-        profiles: JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}')
+        profiles: safeGetStorage(STORAGE_KEY, {})
       };
       const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
       const a = document.createElement('a');
@@ -2355,7 +2411,7 @@
         try {
           const imported = JSON.parse(evt.target.result);
           const profData = imported.profiles ? imported.profiles : imported;
-          const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+          const current = safeGetStorage(STORAGE_KEY, {});
           const merged = Object.assign({}, current, profData);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
 
@@ -2435,13 +2491,13 @@
     }
 
     function addLog(worker, profile, result, note) {
-      const logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      const logs = safeGetStorage(LOG_KEY, []);
       logs.unshift({ date: new Date().toLocaleString(), worker, profile, result, note });
       localStorage.setItem(LOG_KEY, JSON.stringify(logs.slice(0, 500)));
     }
 
     function exportLogsCSV() {
-      const logs = JSON.parse(localStorage.getItem(LOG_KEY) || '[]');
+      const logs = safeGetStorage(LOG_KEY, []);
       let csv = '日時,担当者,品番,結果,詳細\r\n';
       logs.forEach(l => {
         csv += `"${l.date}","${l.worker}","${l.profile}","${l.result}","${l.note}"\r\n`;
